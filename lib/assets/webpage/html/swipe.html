@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EPUB.js Pagination Example</title>
+  <!-- <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/detect_swipe/2.1.1/jquery.detect_swipe.min.js"></script> -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+  <script src="../dist/epub.js"></script>
+
+
+  <link rel="stylesheet" type="text/css" href="examples.css">
+
+  <style type="text/css">
+    body {
+      display: flex;
+      -webkit-align-items: center;
+      -webkit-justify-content: center;
+    }
+
+    #viewer {
+      width: 100%;
+      height: 100%;
+      /* width: 400px;
+      height: 580px; */
+      /* box-shadow: 0 0 4px #ccc; */
+      /* padding: 10px 10px 0px 10px; */
+      margin: 5px auto;
+      background: white;
+    }
+
+
+    @media only screen
+      and (min-device-width : 320px)
+      and (max-device-width : 667px) {
+        #viewer {
+          /* height: 96.5%; */
+        }
+        #viewer iframe {
+          /* pointer-events: none; */
+        }
+        .arrow {
+          position: inherit;
+          display: none;
+        }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="viewer"></div>
+  <script>
+    
+    var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
+    var epubUrl = params && params.get("epubUrl") && decodeURIComponent(params.get("epubUrl"));
+    var accessToken = (params && params.get("accessToken")) ? params.get("accessToken") : undefined;
+    var cfi = (params && params.get("cfi")) ? params.get("cfi") : undefined;
+
+
+    console.log(epubUrl)
+
+    //loading epub
+    var book =  ePub(epubUrl);
+    
+    var rendition = book.renderTo("viewer", {
+      manager: "continuous",
+      flow: "paginated",
+      // method: "continuous",
+      // spread:'none',
+      width: "100%",
+      height: "100%",
+      snap: true,
+      allowScriptedContent: true
+    });
+
+
+    var displayed;
+
+    if(cfi){
+      displayed = rendition.display(cfi)
+    }else{
+      displayed = rendition.display(1)
+    }
+
+    displayed.then(function(renderer){
+      window.flutter_inappwebview.callHandler('displayed');
+    });
+
+
+
+    var chapters = []
+
+    ///loading chapters
+    book.loaded.navigation.then(function(toc){
+       chapters = parseChapters(toc)
+       var args = [JSON.stringify(chapters)]
+       console.log(chapters)
+       console.log(getChapters())
+       window.flutter_inappwebview.callHandler('chapters', ...args);
+     })
+
+
+     ///text selection callback
+     rendition.on("selected", function(cfiRange,contents){
+      book.getRange(cfiRange).then(function (range) {
+        var selectedText = range.toString();
+        var args = [cfiRange.toString(),selectedText]
+        window.flutter_inappwebview.callHandler('selection', ...args);
+      })
+    });
+
+    //book location changes callback
+    rendition.on("relocated", function(location) {
+      var cfiString  = location.start.cfi
+      var args = [cfiString]
+      console.log("relocated");
+     window.flutter_inappwebview.callHandler('current_cfi', ...args);
+    });
+    
+    
+    //move to next page
+    function next(){
+      rendition.next()
+    }
+
+    //move to previous page
+    function previous(){
+      rendition.prev()
+    }
+    
+    //get all chapters
+    function getChapters(){
+      return chapters;
+      // return JSON.stringify(chapters)
+    }
+
+    ///parsing chapters and subitems recursively
+    var parseChapters = function(toc){
+      var chapters = []
+      toc.forEach(function(chapter){
+          chapters.push({
+            title: chapter.label,
+            href: chapter.href,
+            id:chapter.id,
+            subitems: getChapters(chapter.subitems)
+          })
+        })
+       return chapters; 
+    }
+
+    
+    function toHref(href){
+      console.log('Called href')
+      rendition.display(href)
+    }
+
+
+    // adds highlight with given color
+    function addHighlight(cfiRange, color){
+      this.rendition.themes.default({
+      // '::selection': {
+      //   'background': 'rgba(255,255,0, 0.3)'
+      // },
+      // '.epubjs-hl' : {
+      //   'fill': color, 'fill-opacity': '0.3', 'mix-blend-mode': 'multiply',
+      //   // 'background': 'rgba(255,0,0, 0.3)'
+      // }
+      });
+      rendition.annotations.highlight(cfiRange, {}, (e) => {
+          // console.log("highlight clicked", e.target);
+        },"hl", {"fill": color, "fill-opacity": "0.3", "mix-blend-mode": "multiply"});
+    }
+
+    function removeHighLight(cfiString){
+         rendition.annotations.remove(cfiString, "highlight");
+    }
+
+    function searchInBook(query){
+      search(query).then(function (data){
+        // console.log(data)
+        var args = [JSON.stringify(data)]
+        window.flutter_inappwebview.callHandler('search', ...args);
+      })
+    }
+
+    function getCurrentCfi(){
+     var cfiString  = rendition.location.start.cfi
+       var args = [cfiString]
+       console.log(cfiString);
+     window.flutter_inappwebview.callHandler('current_cfi', ...args);
+   
+    }
+
+    function search(q) {
+      return Promise.all(
+          book.spine.spineItems.map(item => item.load(book.load.bind(book)).then(item.find.bind(item, q)).finally(item.unload.bind(item)))
+      ).then(results => Promise.resolve([].concat.apply([], results)));
+    };
+
+    function setFontSize(fontSize){
+      rendition.themes.default({
+        p: {
+        // "margin": '10px',
+        "font-size":`${fontSize}px`
+      }
+      });
+    }
+
+    function setSpread(spread){
+      rendition.spread(spread);
+    }
+
+    function setFlow(flow){
+      rendition.flow(flow);
+    }
+
+    function setManager(manager){
+      rendition.manager(manager);
+    }
+
+  </script>
+
+</body>
+</html>

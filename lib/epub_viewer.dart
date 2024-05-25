@@ -1,7 +1,5 @@
 library epub_viewer;
 
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+export 'src/epub_viewer.dart';
+export 'src/epub_controller.dart';
+export 'src/helper.dart' show EpubChapter, EpubSearchResult;
