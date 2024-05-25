@@ -64,8 +64,7 @@ class _EpubViewerState extends State<EpubViewer> {
     webViewController?.addJavaScriptHandler(
         handlerName: "chapters",
         callback: (data) async {
-          final chapters = await widget.epubController.getChapters();
-          print("EPUB_TEST");
+          final chapters = await widget.epubController.parseChapters();
           widget.onChaptersLoaded?.call(chapters);
         });
 

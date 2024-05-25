@@ -9,6 +9,7 @@ class EpubController {
 
   InAppWebViewController? webViewController;
 
+  ///List of chapters from epub
   List<EpubChapter> chapters = [];
 
   Future<void> initServer() async {
@@ -25,16 +26,23 @@ class EpubController {
     webViewController = controller;
   }
 
-  Future<List<EpubChapter>> getChapters() async {
+  ///Returns list of chapters from epub,
+  /// should be called after onChaptersLoaded callback, otherwise returns empty list
+  getChapters() {
+    return chapters;
+  }
+
+  ///Parsing chapters list form epub
+  Future<List<EpubChapter>> parseChapters() async {
     if (webViewController == null) {
       throw Exception("Epub viewer is not loaded");
     } else {
       final result =
           await webViewController!.evaluateJavascript(source: 'getChapters()');
 
-      print('EPUB_TEST : $result');
-      return List<EpubChapter>.from(
-          result.map((e) => EpubChapter.fromJson(e)));
+      chapters =
+          List<EpubChapter>.from(result.map((e) => EpubChapter.fromJson(e)));
+      return chapters;
     }
   }
 

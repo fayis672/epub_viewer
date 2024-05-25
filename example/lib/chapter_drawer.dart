@@ -11,32 +11,26 @@ class ChapterDrawer extends StatefulWidget {
 }
 
 class _ChapterDrawerState extends State<ChapterDrawer> {
+  late List<EpubChapter> chapters;
+
   @override
   void initState() {
+    chapters = widget.controller.getChapters();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-        child: FutureBuilder(
-            future: widget.controller.getChapters(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done) {
-                return ListView.builder(
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(snapshot.data![index].title),
-                        onTap: () {
-                          // widget.controller.jumpToChapter(snapshot.data![index]);
-                          Navigator.pop(context);
-                        },
-                      );
-                    });
-              } else {
-                return const Center(child: CircularProgressIndicator());
-              }
+        child: ListView.builder(
+            itemCount: chapters.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(chapters[index].title),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              );
             }));
   }
 }
