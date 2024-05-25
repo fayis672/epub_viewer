@@ -9,11 +9,15 @@ class EpubController {
 
   InAppWebViewController? webViewController;
 
+  List<EpubChapter> chapters = [];
+
   Future<void> initServer() async {
+    if (_localhostServer.isRunning()) return;
     await _localhostServer.start();
   }
 
   Future<void> disposeServer() async {
+    if (!_localhostServer.isRunning()) return;
     await _localhostServer.close();
   }
 
@@ -27,8 +31,10 @@ class EpubController {
     } else {
       final result =
           await webViewController!.evaluateJavascript(source: 'getChapters()');
+
+      print('EPUB_TEST : $result');
       return List<EpubChapter>.from(
-          jsonDecode(result[0]).map((e) => EpubChapter.fromJson(e)));
+          result.map((e) => EpubChapter.fromJson(e)));
     }
   }
 

@@ -51,8 +51,6 @@
 </head>
 <body>
   <div id="viewer"></div>
-  <div id="prev" class="arrow">‹</div>
-  <div id="next" class="arrow">›</div>
   <script>
     
     var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
@@ -81,7 +79,6 @@
     var displayed;
 
     if(cfi){
-      console.log('coming')
       displayed = rendition.display(cfi)
     }else{
       displayed = rendition.display(1)
@@ -97,21 +94,16 @@
 
     ///loading chapters
     book.loaded.navigation.then(function(toc){
-        toc.forEach(function(chapter){
-          chapters.push({
-            title: chapter.label,
-            href: chapter.href
-          })
-        })
+       chapters = parseChapters(toc)
        var args = [JSON.stringify(chapters)]
+       console.log(chapters)
+       console.log(getChapters())
        window.flutter_inappwebview.callHandler('chapters', ...args);
      })
 
 
      ///text selection callback
      rendition.on("selected", function(cfiRange,contents){
-      console.log("selected");
-      
       book.getRange(cfiRange).then(function (range) {
         var selectedText = range.toString();
         var args = [cfiRange.toString(),selectedText]
@@ -121,7 +113,6 @@
 
     //book location changes callback
     rendition.on("relocated", function(location) {
-      // console.log(location.start.cfi)
       var cfiString  = location.start.cfi
       var args = [cfiString]
       console.log("relocated");
@@ -129,47 +120,37 @@
     });
     
     
-    ///
-    // displayed.then(function(renderer){
-    //   // -- do stuff
-    // });
-
-    var next = document.getElementById("next");
-    next.addEventListener("click", function(){
-      rendition.next();
-    }, false);
-
-    var prev = document.getElementById("prev");
-    prev.addEventListener("click", function(){
-      rendition.prev();
-    }, false);
-
-    document.addEventListener("keyup", function(e){
-
-      // Left Key
-      if ((e.keyCode || e.which) == 37) {
-        rendition.prev();
-      }
-
-      // Right Key
-      if ((e.keyCode || e.which) == 39) {
-        rendition.next();
-      }
-
-    }, false);
-
-    // $(window).on( "swipeleft", function( event ) {
-    //   rendition.next();
-    // });
-    //
-    // $(window).on( "swiperight", function( event ) {
-    //   rendition.prev();
-    // });
-
-    function getChapters(){
-      return  chapters
+    //move to next page
+    function next(){
+      rendition.next()
     }
 
+    //move to previous page
+    function previous(){
+      rendition.prev()
+    }
+    
+    //get all chapters
+    function getChapters(){
+      return chapters;
+      // return JSON.stringify(chapters)
+    }
+
+    ///parsing chapters and subitems recursively
+    var parseChapters = function(toc){
+      var chapters = []
+      toc.forEach(function(chapter){
+          chapters.push({
+            title: chapter.label,
+            href: chapter.href,
+            id:chapter.id,
+            subitems: getChapters(chapter.subitems)
+          })
+        })
+       return chapters; 
+    }
+
+    
     function toHref(href){
       console.log('Called href')
       rendition.display(href)

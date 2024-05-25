@@ -1,4 +1,5 @@
 import 'package:epub_viewer/src/epub_controller.dart';
+import 'package:epub_viewer/src/helper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -11,19 +12,24 @@ class EpubViewer extends StatefulWidget {
     required this.epubUrl,
     required this.headers,
     this.initialCfi,
+    this.onChaptersLoaded,
   });
 
-  ///epub controller to mange epub
+  ///Epub controller to mange epub
   final EpubController epubController;
 
-  ///epub url to load epub from network
+  ///Epub url to load epub from network
   final String epubUrl;
 
-  ///epub headers to load epub from network
+  ///Epub headers to load epub from network
   final Map<String, String> headers;
 
-  ///initial cfi string to load specif which part of epub to load initially
+  ///Initial cfi string to  specify which part of epub to load initially
+  ///if null, the first chapter will be loaded
   final String? initialCfi;
+
+  ///Call back when chapters are loaded
+  final ValueChanged<List<EpubChapter>>? onChaptersLoaded;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
@@ -57,8 +63,10 @@ class _EpubViewerState extends State<EpubViewer> {
   addJavaScriptHandlers() {
     webViewController?.addJavaScriptHandler(
         handlerName: "chapters",
-        callback: (data) {
-          widget.epubController.getChapters();
+        callback: (data) async {
+          final chapters = await widget.epubController.getChapters();
+          print("EPUB_TEST");
+          widget.onChaptersLoaded?.call(chapters);
         });
 
     ///selection handler
