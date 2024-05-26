@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:epub_viewer/src/helper.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -49,6 +51,7 @@ class EpubController {
 
   ///Parsing chapters list form epub
   Future<List<EpubChapter>> parseChapters() async {
+    if (chapters.isNotEmpty) return chapters;
     checkEpubLoaded();
     final result =
         await webViewController!.evaluateJavascript(source: 'getChapters()');
@@ -56,6 +59,21 @@ class EpubController {
     chapters =
         List<EpubChapter>.from(result.map((e) => EpubChapter.fromJson(e)));
     return chapters;
+  }
+
+  Completer searchResultCompleter = Completer<List<EpubSearchResult>>();
+
+  ///Search in epub using query string
+  Future<List<EpubSearchResult>> search({
+    ///Search query string
+    required String query,
+    // bool optimized = false,
+  }) async {
+    searchResultCompleter = Completer<List<EpubSearchResult>>();
+    if (query.isEmpty) return [];
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'searchInBook("$query")');
+    return await searchResultCompleter.future;
   }
 
   checkEpubLoaded() {
