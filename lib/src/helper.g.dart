@@ -34,3 +34,14 @@ Map<String, dynamic> _$EpubSearchResultToJson(EpubSearchResult instance) =>
       'cfi': instance.cfi,
       'excerpt': instance.excerpt,
     };
+
+EpubLocation _$EpubLocationFromJson(Map<String, dynamic> json) => EpubLocation(
+      startCfi: json['startCfi'] as String,
+      endCfi: json['endCfi'] as String,
+    );
+
+Map<String, dynamic> _$EpubLocationToJson(EpubLocation instance) =>
+    <String, dynamic>{
+      'startCfi': instance.startCfi,
+      'endCfi': instance.endCfi,
+    };

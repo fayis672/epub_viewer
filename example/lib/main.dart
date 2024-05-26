@@ -88,7 +88,16 @@ class _MyHomePageState extends State<MyHomePage> {
               epubController: epubController,
               epubUrl: 'https://s3.amazonaws.com/moby-dick/OPS/package.opf',
               headers: {},
-              onChaptersLoaded: (value) {},
+              onChaptersLoaded: (chapters) {},
+              onEpubLoaded: () async{
+                print('Epub loaded');
+                epubController.getCurrentLocation().then((location) {
+                  print('Current location: $location');
+                });
+              },
+              onRelocated: (value) {
+                print("Reloacted to $value");
+              },
             ),
           ),
         ],

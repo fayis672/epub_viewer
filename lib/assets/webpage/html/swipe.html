@@ -113,10 +113,13 @@
 
     //book location changes callback
     rendition.on("relocated", function(location) {
-      var cfiString  = location.start.cfi
-      var args = [cfiString]
       console.log("relocated");
-     window.flutter_inappwebview.callHandler('current_cfi', ...args);
+      var location  = {
+       startCfi: location.start.cfi,
+       endCfi:location.end.cfi
+     }
+      var args = [location]
+     window.flutter_inappwebview.callHandler('relocated', ...args);
     });
     
     
@@ -129,11 +132,28 @@
     function previous(){
       rendition.prev()
     }
+
+    //move to given cfi location
+    function toCfi(cfi){
+      rendition.display(cfi)
+    }
     
     //get all chapters
     function getChapters(){
       return chapters;
-      // return JSON.stringify(chapters)
+    }
+
+
+    function getCurrentLocation(){
+     var location  = {
+       startCfi: rendition.location.start.cfi,
+       endCfi: rendition.location.end.cfi
+     }
+      console.log(location)
+      return location;
+      // var args = [location]
+    //  window.flutter_inappwebview.callHandler('current_cfi', ...args);
+   
     }
 
     ///parsing chapters and subitems recursively
@@ -151,10 +171,7 @@
     }
 
     
-    function toHref(href){
-      console.log('Called href')
-      rendition.display(href)
-    }
+    
 
 
     // adds highlight with given color
@@ -185,13 +202,7 @@
       })
     }
 
-    function getCurrentCfi(){
-     var cfiString  = rendition.location.start.cfi
-       var args = [cfiString]
-       console.log(cfiString);
-     window.flutter_inappwebview.callHandler('current_cfi', ...args);
-   
-    }
+    
 
     function search(q) {
       return Promise.all(

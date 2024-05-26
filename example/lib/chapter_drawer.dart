@@ -28,6 +28,7 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
               return ListTile(
                 title: Text(chapters[index].title),
                 onTap: () {
+                  widget.controller.display(cfi: chapters[index].href);
                   Navigator.pop(context);
                 },
               );
