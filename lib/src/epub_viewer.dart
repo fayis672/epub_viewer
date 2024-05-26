@@ -13,6 +13,8 @@ class EpubViewer extends StatefulWidget {
     required this.headers,
     this.initialCfi,
     this.onChaptersLoaded,
+    this.onEpubLoaded,
+    this.onRelocated,
   });
 
   ///Epub controller to mange epub
@@ -28,8 +30,14 @@ class EpubViewer extends StatefulWidget {
   ///if null, the first chapter will be loaded
   final String? initialCfi;
 
+  ///Call back when epub is loaded and displayed
+  final VoidCallback? onEpubLoaded;
+
   ///Call back when chapters are loaded
   final ValueChanged<List<EpubChapter>>? onChaptersLoaded;
+
+  ///Call back when epub page changes
+  final ValueChanged<EpubLocation>? onRelocated;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
@@ -37,6 +45,10 @@ class EpubViewer extends StatefulWidget {
 
 class _EpubViewerState extends State<EpubViewer> {
   final GlobalKey webViewKey = GlobalKey();
+
+  final LocalServerController localServerController = LocalServerController();
+
+  // late PullToRefreshController pullToRefreshController;
   // late ContextMenu contextMenu;
   var selectedText = '';
 
@@ -62,6 +74,12 @@ class _EpubViewerState extends State<EpubViewer> {
 
   addJavaScriptHandlers() {
     webViewController?.addJavaScriptHandler(
+        handlerName: "displayed",
+        callback: (data) {
+          widget.onEpubLoaded?.call();
+        });
+
+    webViewController?.addJavaScriptHandler(
         handlerName: "chapters",
         callback: (data) async {
           final chapters = await widget.epubController.parseChapters();
@@ -81,33 +99,21 @@ class _EpubViewerState extends State<EpubViewer> {
         handlerName: "search",
         callback: (data) async {
           var searchResult = data[0];
-
-          // decodeSearchJson(searchResult) {
-          //   return List<BookSearchRes>.from(
-          //       jsonDecode(searchResult).map((e) => BookSearchRes.fromJson(e)));
-          // }
-
-          // _bookSearchResults = await compute(decodeSearchJson, searchResult);
-          // _isLoading = false;
-          // update([bookSearchWidgetId]);
-          // customLog(tag: "SEARCH_RESULT", searchResult);
         });
 
     ///current cfi callback
     webViewController?.addJavaScriptHandler(
-        handlerName: "current_cfi",
+        handlerName: "relocated",
         callback: (data) {
-          var currentCfi = data[0];
+          var location = data[0];
+          widget.onRelocated?.call(EpubLocation.fromJson(location));
         });
-
-    webViewController?.addJavaScriptHandler(
-        handlerName: "displayed", callback: (data) {});
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: widget.epubController.initServer(),
+        future: localServerController.initServer(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
