@@ -1,5 +1,6 @@
 import 'package:epub_viewer/epub_viewer.dart';
 import 'package:example/chapter_drawer.dart';
+import 'package:example/search_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -79,6 +80,19 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => SearchPage(
+                            epubController: epubController,
+                          )));
+            },
+          ),
+        ],
       ),
       body: SafeArea(
           child: Column(
@@ -88,12 +102,13 @@ class _MyHomePageState extends State<MyHomePage> {
               epubController: epubController,
               epubUrl: 'https://s3.amazonaws.com/moby-dick/OPS/package.opf',
               headers: {},
-              onChaptersLoaded: (chapters) {},
-              onEpubLoaded: () async{
-                print('Epub loaded');
+              onChaptersLoaded: (chapters) {
                 epubController.getCurrentLocation().then((location) {
                   print('Current location: $location');
                 });
+              },
+              onEpubLoaded: () async {
+                print('Epub loaded');
               },
               onRelocated: (value) {
                 print("Reloacted to $value");

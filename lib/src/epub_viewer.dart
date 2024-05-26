@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:epub_viewer/src/epub_controller.dart';
 import 'package:epub_viewer/src/helper.dart';
 import 'package:flutter/foundation.dart';
@@ -80,6 +82,12 @@ class _EpubViewerState extends State<EpubViewer> {
         });
 
     webViewController?.addJavaScriptHandler(
+        handlerName: "rendered",
+        callback: (data) {
+          // widget.onEpubLoaded?.call();
+        });
+
+    webViewController?.addJavaScriptHandler(
         handlerName: "chapters",
         callback: (data) async {
           final chapters = await widget.epubController.parseChapters();
@@ -99,6 +107,9 @@ class _EpubViewerState extends State<EpubViewer> {
         handlerName: "search",
         callback: (data) async {
           var searchResult = data[0];
+          widget.epubController.searchResultCompleter.complete(
+              List<EpubSearchResult>.from(
+                  searchResult.map((e) => EpubSearchResult.fromJson(e))));
         });
 
     ///current cfi callback

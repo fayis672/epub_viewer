@@ -27,14 +27,14 @@ class EpubChapter {
 @JsonSerializable(explicitToJson: true)
 class EpubSearchResult {
   /// The cfi string search result
-  String? cfi;
+  String cfi;
 
   /// The excerpt of the search result
-  String? excerpt;
+  String excerpt;
 
   EpubSearchResult({
-    this.cfi,
-    this.excerpt,
+    required this.cfi,
+    required this.excerpt,
   });
   factory EpubSearchResult.fromJson(Map<String, dynamic> json) =>
       _$EpubSearchResultFromJson(json);

@@ -25,8 +25,8 @@ Map<String, dynamic> _$EpubChapterToJson(EpubChapter instance) =>
 
 EpubSearchResult _$EpubSearchResultFromJson(Map<String, dynamic> json) =>
     EpubSearchResult(
-      cfi: json['cfi'] as String?,
-      excerpt: json['excerpt'] as String?,
+      cfi: json['cfi'] as String,
+      excerpt: json['excerpt'] as String,
     );
 
 Map<String, dynamic> _$EpubSearchResultToJson(EpubSearchResult instance) =>
