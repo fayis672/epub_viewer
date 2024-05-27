@@ -60,6 +60,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final epubController = EpubController();
 
+  var textSelectionCfi = '';
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -100,18 +102,31 @@ class _MyHomePageState extends State<MyHomePage> {
           Expanded(
             child: EpubViewer(
               epubController: epubController,
+              selectionContextMenu: ContextMenu(
+                menuItems: [
+                  ContextMenuItem(
+                    title: "Highlight",
+                    id: 1,
+                    action: () async {
+                      epubController.addHighlight(cfi: textSelectionCfi);
+                    },
+                  ),
+                ],
+                settings: ContextMenuSettings(
+                    hideDefaultSystemContextMenuItems: true),
+              ),
               epubUrl: 'https://s3.amazonaws.com/moby-dick/OPS/package.opf',
               headers: {},
-              onChaptersLoaded: (chapters) {
-                epubController.getCurrentLocation().then((location) {
-                  print('Current location: $location');
-                });
-              },
+              onChaptersLoaded: (chapters) {},
               onEpubLoaded: () async {
                 print('Epub loaded');
               },
               onRelocated: (value) {
                 print("Reloacted to $value");
+              },
+              onTextSelected: (epubTextSelection) {
+                textSelectionCfi = epubTextSelection.selectionCfi;
+                print(textSelectionCfi);
               },
             ),
           ),

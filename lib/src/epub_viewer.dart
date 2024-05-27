@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:epub_viewer/src/epub_controller.dart';
 import 'package:epub_viewer/src/helper.dart';
@@ -17,6 +16,8 @@ class EpubViewer extends StatefulWidget {
     this.onChaptersLoaded,
     this.onEpubLoaded,
     this.onRelocated,
+    this.onTextSelected,
+    this.selectionContextMenu,
   });
 
   ///Epub controller to mange epub
@@ -40,6 +41,13 @@ class EpubViewer extends StatefulWidget {
 
   ///Call back when epub page changes
   final ValueChanged<EpubLocation>? onRelocated;
+
+  ///Call back when text selection changes
+  final ValueChanged<EpubTextSelection>? onTextSelected;
+
+  ///context menu for text selection
+  ///if null, the default context menu will be used
+  final ContextMenu? selectionContextMenu;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
@@ -100,6 +108,8 @@ class _EpubViewerState extends State<EpubViewer> {
         callback: (data) {
           var cfiString = data[0];
           var selectedText = data[1];
+          widget.onTextSelected?.call(EpubTextSelection(
+              selectedText: selectedText, selectionCfi: cfiString));
         });
 
     ///search callback
@@ -135,7 +145,7 @@ class _EpubViewerState extends State<EpubViewer> {
           }
 
           return InAppWebView(
-            // contextMenu: contextMenu,
+            contextMenu: widget.selectionContextMenu,
             key: webViewKey,
             initialUrlRequest: URLRequest(
                 url: WebUri(
