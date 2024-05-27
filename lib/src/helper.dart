@@ -57,3 +57,13 @@ class EpubLocation {
       _$EpubLocationFromJson(json);
   Map<String, dynamic> toJson() => _$EpubLocationToJson(this);
 }
+
+class EpubTextSelection {
+  final String selectedText;
+  final String selectionCfi;
+
+  EpubTextSelection({
+    required this.selectedText,
+    required this.selectionCfi,
+  });
+}

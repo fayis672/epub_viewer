@@ -95,14 +95,10 @@
     ///loading chapters
     book.loaded.navigation.then(function(toc){
        chapters = parseChapters(toc)
-       var args = [JSON.stringify(chapters)]
-       console.log(chapters)
-       console.log(getChapters())
-       window.flutter_inappwebview.callHandler('chapters', ...args);
+       window.flutter_inappwebview.callHandler('chapters');
      })
 
-    book,loaded.
-     
+
 
      rendition.on("rendered" , function(){
       window.flutter_inappwebview.callHandler('rendered');
@@ -186,7 +182,7 @@
 
 
     // adds highlight with given color
-    function addHighlight(cfiRange, color){
+    function addHighlight(cfiRange, color, opacity){
       this.rendition.themes.default({
       // '::selection': {
       //   'background': 'rgba(255,255,0, 0.3)'
@@ -198,7 +194,7 @@
       });
       rendition.annotations.highlight(cfiRange, {}, (e) => {
           // console.log("highlight clicked", e.target);
-        },"hl", {"fill": color, "fill-opacity": "0.3", "mix-blend-mode": "multiply"});
+        },"hl", {"fill": color, "fill-opacity": '0.3', "mix-blend-mode": "multiply"});
     }
 
     function removeHighLight(cfiString){

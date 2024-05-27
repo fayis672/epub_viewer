@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:epub_viewer/src/helper.dart';
+import 'package:epub_viewer/src/utils.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class EpubController {
@@ -39,6 +41,11 @@ class EpubController {
     checkEpubLoaded();
     final result = await webViewController?.evaluateJavascript(
         source: 'getCurrentLocation()');
+
+    if (result == null) {
+      throw Exception("Epub locations not loaded");
+    }
+
     return EpubLocation.fromJson(result);
   }
 
@@ -55,7 +62,6 @@ class EpubController {
     checkEpubLoaded();
     final result =
         await webViewController!.evaluateJavascript(source: 'getChapters()');
-
     chapters =
         List<EpubChapter>.from(result.map((e) => EpubChapter.fromJson(e)));
     return chapters;
@@ -64,6 +70,7 @@ class EpubController {
   Completer searchResultCompleter = Completer<List<EpubSearchResult>>();
 
   ///Search in epub using query string
+  ///Returns list of search results
   Future<List<EpubSearchResult>> search({
     ///Search query string
     required String query,
@@ -72,14 +79,39 @@ class EpubController {
     searchResultCompleter = Completer<List<EpubSearchResult>>();
     if (query.isEmpty) return [];
     checkEpubLoaded();
-    await webViewController?.evaluateJavascript(source: 'searchInBook("$query")');
+    await webViewController?.evaluateJavascript(
+        source: 'searchInBook("$query")');
     return await searchResultCompleter.future;
+  }
+
+  ///Adds a highlight to epub viewer
+  addHighlight({
+    ///Cfi string of the desired location
+    required String cfi,
+
+    ///Color of the highlight
+    Color color = Colors.yellow,
+
+    ///Opacity of the highlight
+    double opacity = 0.3,
+  }) {
+    var colorHex = color.toHex();
+    var opacityString = opacity.toString();
+    checkEpubLoaded();
+    webViewController?.evaluateJavascript(
+        source: 'addHighlight("$cfi", "$colorHex", "$opacityString")');
+  }
+
+  ///Removes a highlight from epub viewer
+  removeHighlight({required String cfi}) {
+    checkEpubLoaded();
+    webViewController?.evaluateJavascript(source: 'removeHighlight("$cfi")');
   }
 
   checkEpubLoaded() {
     if (webViewController == null) {
       throw Exception(
-          "Epub viewer is not loaded, please call after onEpubLoaded callback");
+          "Epub viewer is not loaded, wait for onEpubLoaded callback");
     }
   }
 }
