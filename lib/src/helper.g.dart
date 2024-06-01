@@ -45,3 +45,59 @@ Map<String, dynamic> _$EpubLocationToJson(EpubLocation instance) =>
       'startCfi': instance.startCfi,
       'endCfi': instance.endCfi,
     };
+
+EpubDisplaySettings _$EpubDisplaySettingsFromJson(Map<String, dynamic> json) =>
+    EpubDisplaySettings(
+      fontSize: (json['fontSize'] as num?)?.toInt() ?? 15,
+      spread: $enumDecodeNullable(_$EpubSpreadEnumMap, json['spread']) ??
+          EpubSpread.auto,
+      flow: $enumDecodeNullable(_$EpubFlowEnumMap, json['flow']) ??
+          EpubFlow.scrolled,
+      allowScriptedContent: json['allowScriptedContent'] as bool? ?? false,
+      defaultDirection: $enumDecodeNullable(
+          _$EpubDefaultDirectionEnumMap, json['defaultDirection']),
+      snap: json['snap'] as bool? ?? false,
+      manager: $enumDecodeNullable(_$EpubManagerEnumMap, json['manager']) ??
+          EpubManager.continuous,
+    );
+
+Map<String, dynamic> _$EpubDisplaySettingsToJson(EpubDisplaySettings instance) {
+  final val = <String, dynamic>{
+    'fontSize': instance.fontSize,
+    'spread': _$EpubSpreadEnumMap[instance.spread]!,
+    'flow': _$EpubFlowEnumMap[instance.flow]!,
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('defaultDirection',
+      _$EpubDefaultDirectionEnumMap[instance.defaultDirection]);
+  val['allowScriptedContent'] = instance.allowScriptedContent;
+  val['manager'] = _$EpubManagerEnumMap[instance.manager]!;
+  val['snap'] = instance.snap;
+  return val;
+}
+
+const _$EpubSpreadEnumMap = {
+  EpubSpread.none: 'none',
+  EpubSpread.always: 'always',
+  EpubSpread.auto: 'auto',
+};
+
+const _$EpubFlowEnumMap = {
+  EpubFlow.paginated: 'paginated',
+  EpubFlow.scrolled: 'scrolled',
+};
+
+const _$EpubDefaultDirectionEnumMap = {
+  EpubDefaultDirection.ltr: 'ltr',
+  EpubDefaultDirection.rtl: 'rtl',
+};
+
+const _$EpubManagerEnumMap = {
+  EpubManager.continuous: 'continuous',
+};

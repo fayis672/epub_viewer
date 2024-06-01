@@ -58,6 +58,58 @@ class EpubLocation {
   Map<String, dynamic> toJson() => _$EpubLocationToJson(this);
 }
 
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
+class EpubDisplaySettings {
+  int fontSize;
+  EpubSpread spread;
+  EpubFlow flow;
+  EpubDefaultDirection? defaultDirection;
+  bool allowScriptedContent;
+  EpubManager manager;
+
+  /// Enables swipe between pages
+  bool snap;
+
+  EpubDisplaySettings({
+    this.fontSize = 15,
+    this.spread = EpubSpread.auto,
+    this.flow = EpubFlow.scrolled,
+    this.allowScriptedContent = false,
+    this.defaultDirection,
+    this.snap = false,
+    this.manager = EpubManager.continuous,
+  });
+  factory EpubDisplaySettings.fromJson(Map<String, dynamic> json) =>
+      _$EpubDisplaySettingsFromJson(json);
+  Map<String, dynamic> toJson() => _$EpubDisplaySettingsToJson(this);
+}
+
+enum EpubSpread {
+  ///Displays a single page in viewer
+  none,
+
+  ///Displays two pages in viewer
+  always,
+
+  ///Displays single or two pages in viewer depending on the device size
+  auto,
+}
+
+enum EpubFlow {
+  ///Displays contents page by page
+  paginated,
+
+  ///Displays contents in a single scroll view
+  scrolled,
+}
+
+enum EpubDefaultDirection { ltr, rtl }
+
+enum EpubManager {
+  continuous,
+  // epub
+}
+
 class EpubTextSelection {
   final String selectedText;
   final String selectionCfi;

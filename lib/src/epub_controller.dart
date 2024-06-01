@@ -108,12 +108,22 @@ class EpubController {
     webViewController?.evaluateJavascript(source: 'removeHighlight("$cfi")');
   }
 
+   setSpread({required EpubSpread spread}) {}
+
+  setFlow({required EpubFlow flow}) {}
+
+  setManager({required EpubManager manager}) {}
+
+  setFontSize({required double fontSize}) {}
+
   checkEpubLoaded() {
     if (webViewController == null) {
       throw Exception(
           "Epub viewer is not loaded, wait for onEpubLoaded callback");
     }
   }
+
+ 
 }
 
 class LocalServerController {
