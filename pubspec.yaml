@@ -13,10 +13,6 @@ dependencies:
   flutter_inappwebview: ^6.0.0
   json_annotation: ^4.8.0
 
-platforms:
-  android:
-  ios:
-  
   
 dev_dependencies:
   flutter_test:
