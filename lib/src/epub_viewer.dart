@@ -12,7 +12,7 @@ class EpubViewer extends StatefulWidget {
     super.key,
     required this.epubController,
     required this.epubUrl,
-    required this.headers,
+    this.headers,
     this.initialCfi,
     this.onChaptersLoaded,
     this.onEpubLoaded,
@@ -22,14 +22,14 @@ class EpubViewer extends StatefulWidget {
     this.selectionContextMenu,
   });
 
-  ///Epub controller to mange epub
+  ///Epub controller to manage epub
   final EpubController epubController;
 
   ///Epub url to load epub from network
   final String epubUrl;
 
   ///Epub headers to load epub from network
-  final Map<String, String> headers;
+  final Map<String, String>? headers;
 
   ///Initial cfi string to  specify which part of epub to load initially
   ///if null, the first chapter will be loaded
@@ -155,7 +155,7 @@ class _EpubViewerState extends State<EpubViewer> {
             key: webViewKey,
             initialUrlRequest: URLRequest(
                 url: WebUri(
-                    'http://localhost:8080/html/swipe.html?epubUrl=${widget.epubUrl}&cfi=${widget.initialCfi??''}&displaySettings=$displaySettings&headers=$headers')),
+                    'http://localhost:8080/html/swipe.html?epubUrl=${widget.epubUrl}&cfi=${widget.initialCfi ?? ''}&displaySettings=$displaySettings&headers=$headers')),
             initialSettings: settings,
             // pullToRefreshController: pullToRefreshController,
             onWebViewCreated: (controller) {
