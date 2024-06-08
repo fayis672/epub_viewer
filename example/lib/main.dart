@@ -1,4 +1,4 @@
-import 'package:flutter_epub_viewer/epub_viewer.dart';
+import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
 import 'package:example/chapter_drawer.dart';
 import 'package:example/search_page.dart';
 import 'package:flutter/material.dart';
