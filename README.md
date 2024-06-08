@@ -10,6 +10,9 @@ A Flutter package for viewing Epub documents, developed by combining the power o
  - Resume reading using cfi
  - Custom context menus for selection
 
+
+<img width='50%' src="https://github.com/fayis672/epub_viewer/blob/main/epub_viewr_exp.gif?raw=true">
+
 ## Limitations
 - Loading from local files and assets is not supported
 
