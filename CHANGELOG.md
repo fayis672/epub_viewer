@@ -1,3 +1,9 @@
-## 0.0.1
+## 1.0.0
 
-* TODO: Describe initial release.
+ - Highlight text
+ - Search in Epub
+ - List chapters
+ - Text selection
+ - Highly customizable UI
+ - Resume reading using cfi
+ - Custom context menus for selection
