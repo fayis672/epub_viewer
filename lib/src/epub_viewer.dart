@@ -1,3 +1,4 @@
+import 'dart:convert';
 
 import 'package:epub_viewer/src/epub_controller.dart';
 import 'package:epub_viewer/src/helper.dart';
@@ -17,6 +18,7 @@ class EpubViewer extends StatefulWidget {
     this.onEpubLoaded,
     this.onRelocated,
     this.onTextSelected,
+    this.displaySettings,
     this.selectionContextMenu,
   });
 
@@ -44,6 +46,9 @@ class EpubViewer extends StatefulWidget {
 
   ///Call back when text selection changes
   final ValueChanged<EpubTextSelection>? onTextSelected;
+
+  ///initial display settings
+  final EpubDisplaySettings? displaySettings;
 
   ///context menu for text selection
   ///if null, the default context menu will be used
@@ -136,20 +141,21 @@ class _EpubViewerState extends State<EpubViewer> {
     return FutureBuilder(
         future: localServerController.initServer(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState != ConnectionState.done) {
+            return Container();
           }
 
-          if (snapshot.hasError) {
-            return const Center(child: Text('Error loading epub'));
-          }
+          final displaySettings = jsonEncode(widget.displaySettings?.toJson() ??
+              EpubDisplaySettings().toJson());
+
+          final headers = jsonEncode(widget.headers);
 
           return InAppWebView(
             contextMenu: widget.selectionContextMenu,
             key: webViewKey,
             initialUrlRequest: URLRequest(
                 url: WebUri(
-                    'http://localhost:8080/html/swipe.html?epubUrl=${widget.epubUrl}&cfi=')),
+                    'http://localhost:8080/html/swipe.html?epubUrl=${widget.epubUrl}&cfi=${widget.initialCfi??''}&displaySettings=$displaySettings&headers=$headers')),
             initialSettings: settings,
             // pullToRefreshController: pullToRefreshController,
             onWebViewCreated: (controller) {

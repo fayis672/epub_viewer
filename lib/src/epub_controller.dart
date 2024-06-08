@@ -49,7 +49,7 @@ class EpubController {
     return EpubLocation.fromJson(result);
   }
 
-  ///Returns list of chapters from epub,
+  ///Returns list of [EpubChapter] from epub,
   /// should be called after onChaptersLoaded callback, otherwise returns empty list
   List<EpubChapter> getChapters() {
     checkEpubLoaded();
@@ -70,7 +70,7 @@ class EpubController {
   Completer searchResultCompleter = Completer<List<EpubSearchResult>>();
 
   ///Search in epub using query string
-  ///Returns list of search results
+  ///Returns a list of [EpubSearchResult]
   Future<List<EpubSearchResult>> search({
     ///Search query string
     required String query,
@@ -108,12 +108,36 @@ class EpubController {
     webViewController?.evaluateJavascript(source: 'removeHighlight("$cfi")');
   }
 
+  ///Set [EpubSpread] value
+  setSpread({required EpubSpread spread}) async{
+    await webViewController?.evaluateJavascript(source: 'setSpread("$spread")');
+  }
+
+  ///Set [EpubFlow] value
+  setFlow({required EpubFlow flow}) async{
+    await webViewController?.evaluateJavascript(source: 'setFlow("$flow")');
+  }
+
+  ///Set [EpubManager] value
+  setManager({required EpubManager manager}) async{
+    await webViewController?.evaluateJavascript(source: 'setManager("$manager")');
+  
+  }
+
+
+  ///Adjust font size in epub viewer
+  setFontSize({required double fontSize}) async{
+    await webViewController?.evaluateJavascript(source: 'setFontSize("$fontSize")');
+  }
+
   checkEpubLoaded() {
     if (webViewController == null) {
       throw Exception(
           "Epub viewer is not loaded, wait for onEpubLoaded callback");
     }
   }
+
+ 
 }
 
 class LocalServerController {

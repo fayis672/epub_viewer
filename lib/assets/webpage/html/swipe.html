@@ -57,22 +57,32 @@
     var epubUrl = params && params.get("epubUrl") && decodeURIComponent(params.get("epubUrl"));
     var accessToken = (params && params.get("accessToken")) ? params.get("accessToken") : undefined;
     var cfi = (params && params.get("cfi")) ? params.get("cfi") : undefined;
+    var displaySettings= (params && params.get("displaySettings")) ? params.get("displaySettings") : undefined;
+    var headers= (params && params.get("headers")) ? params.get("headers") : undefined;
+
+    if(headers){
+     headers = JSON.parse(headers)
+    }
+    if(displaySettings){
+      displaySettings = JSON.parse(displaySettings)
+    }
 
 
-    console.log(epubUrl)
 
     //loading epub
-    var book =  ePub(epubUrl);
+    var book =  ePub(epubUrl,{
+      requestHeaders:headers
+    });
     
     var rendition = book.renderTo("viewer", {
-      manager: "continuous",
-      flow: "paginated",
+      manager: displaySettings.manager,
+      flow: displaySettings.flow,
       // method: "continuous",
-      // spread:'none',
+      spread:displaySettings.spread,
       width: "100%",
       height: "100%",
-      snap: true,
-      allowScriptedContent: true
+      snap: displaySettings.snap,
+      allowScriptedContent: displaySettings.allowScriptedContent,
     });
 
 
@@ -230,6 +240,15 @@
 
     function setManager(manager){
       rendition.manager(manager);
+    }
+
+    function setFontSize(fontSize){
+      rendition.themes.default({
+        p: {
+        // "margin": '10px',
+        "font-size":`${fontSize}px`
+      }
+      });
     }
 
   </script>

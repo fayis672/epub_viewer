@@ -101,7 +101,10 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           Expanded(
             child: EpubViewer(
+              epubUrl: 'https://s3.amazonaws.com/moby-dick/OPS/package.opf',
               epubController: epubController,
+              displaySettings:
+                  EpubDisplaySettings(flow: EpubFlow.paginated, snap: true),
               selectionContextMenu: ContextMenu(
                 menuItems: [
                   ContextMenuItem(
@@ -115,7 +118,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 settings: ContextMenuSettings(
                     hideDefaultSystemContextMenuItems: true),
               ),
-              epubUrl: 'https://s3.amazonaws.com/moby-dick/OPS/package.opf',
               headers: {},
               onChaptersLoaded: (chapters) {},
               onEpubLoaded: () async {
