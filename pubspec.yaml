@@ -1,4 +1,4 @@
-name: epub_viewer
+name: flutter_epub_viewer
 description: "A Flutter package for viewing Epub documents"
 version: 1.0.0
 homepage: https://github.com/fayis672/epub_viewer

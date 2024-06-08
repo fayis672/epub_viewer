@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:epub_viewer/src/epub_controller.dart';
-import 'package:epub_viewer/src/helper.dart';
+import 'package:flutter_epub_viewer/src/epub_controller.dart';
+import 'package:flutter_epub_viewer/src/helper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';

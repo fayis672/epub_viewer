@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:epub_viewer/src/helper.dart';
-import 'package:epub_viewer/src/utils.dart';
+import 'package:flutter_epub_viewer/src/helper.dart';
+import 'package:flutter_epub_viewer/src/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
