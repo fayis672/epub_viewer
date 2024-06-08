@@ -49,7 +49,7 @@ class EpubController {
     return EpubLocation.fromJson(result);
   }
 
-  ///Returns list of chapters from epub,
+  ///Returns list of [EpubChapter] from epub,
   /// should be called after onChaptersLoaded callback, otherwise returns empty list
   List<EpubChapter> getChapters() {
     checkEpubLoaded();
@@ -70,7 +70,7 @@ class EpubController {
   Completer searchResultCompleter = Completer<List<EpubSearchResult>>();
 
   ///Search in epub using query string
-  ///Returns list of search results
+  ///Returns a list of [EpubSearchResult]
   Future<List<EpubSearchResult>> search({
     ///Search query string
     required String query,
@@ -108,13 +108,27 @@ class EpubController {
     webViewController?.evaluateJavascript(source: 'removeHighlight("$cfi")');
   }
 
-   setSpread({required EpubSpread spread}) {}
+  ///Set [EpubSpread] value
+  setSpread({required EpubSpread spread}) async{
+    await webViewController?.evaluateJavascript(source: 'setSpread("$spread")');
+  }
 
-  setFlow({required EpubFlow flow}) {}
+  ///Set [EpubFlow] value
+  setFlow({required EpubFlow flow}) async{
+    await webViewController?.evaluateJavascript(source: 'setFlow("$flow")');
+  }
 
-  setManager({required EpubManager manager}) {}
+  ///Set [EpubManager] value
+  setManager({required EpubManager manager}) async{
+    await webViewController?.evaluateJavascript(source: 'setManager("$manager")');
+  
+  }
 
-  setFontSize({required double fontSize}) {}
+
+  ///Adjust font size in epub viewer
+  setFontSize({required double fontSize}) async{
+    await webViewController?.evaluateJavascript(source: 'setFontSize("$fontSize")');
+  }
 
   checkEpubLoaded() {
     if (webViewController == null) {

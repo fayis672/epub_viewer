@@ -155,7 +155,7 @@ class _EpubViewerState extends State<EpubViewer> {
             key: webViewKey,
             initialUrlRequest: URLRequest(
                 url: WebUri(
-                    'http://localhost:8080/html/swipe.html?epubUrl=${widget.epubUrl}&cfi=${widget.initialCfi}&displaySettings=$displaySettings&headers=$headers')),
+                    'http://localhost:8080/html/swipe.html?epubUrl=${widget.epubUrl}&cfi=${widget.initialCfi??''}&displaySettings=$displaySettings&headers=$headers')),
             initialSettings: settings,
             // pullToRefreshController: pullToRefreshController,
             onWebViewCreated: (controller) {
