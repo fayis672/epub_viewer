@@ -109,25 +109,25 @@ class EpubController {
   }
 
   ///Set [EpubSpread] value
-  setSpread({required EpubSpread spread}) async{
+  setSpread({required EpubSpread spread}) async {
     await webViewController?.evaluateJavascript(source: 'setSpread("$spread")');
   }
 
   ///Set [EpubFlow] value
-  setFlow({required EpubFlow flow}) async{
+  setFlow({required EpubFlow flow}) async {
     await webViewController?.evaluateJavascript(source: 'setFlow("$flow")');
   }
 
   ///Set [EpubManager] value
-  setManager({required EpubManager manager}) async{
-    await webViewController?.evaluateJavascript(source: 'setManager("$manager")');
-  
+  setManager({required EpubManager manager}) async {
+    await webViewController?.evaluateJavascript(
+        source: 'setManager("$manager")');
   }
 
-
   ///Adjust font size in epub viewer
-  setFontSize({required double fontSize}) async{
-    await webViewController?.evaluateJavascript(source: 'setFontSize("$fontSize")');
+  setFontSize({required double fontSize}) async {
+    await webViewController?.evaluateJavascript(
+        source: 'setFontSize("$fontSize")');
   }
 
   checkEpubLoaded() {
@@ -136,13 +136,11 @@ class EpubController {
           "Epub viewer is not loaded, wait for onEpubLoaded callback");
     }
   }
-
- 
 }
 
 class LocalServerController {
   final InAppLocalhostServer _localhostServer = InAppLocalhostServer(
-      documentRoot: 'packages/epub_viewer/lib/assets/webpage');
+      documentRoot: 'packages/flutter_epub_viewer/lib/assets/webpage');
 
   Future<void> initServer() async {
     if (_localhostServer.isRunning()) return;

@@ -83,8 +83,10 @@ class _MyHomePageState extends State<MyHomePage> {
             child: EpubViewer(
               epubUrl: 'https://s3.amazonaws.com/moby-dick/OPS/package.opf',
               epubController: epubController,
-              displaySettings:
-                  EpubDisplaySettings(flow: EpubFlow.paginated, snap: true),
+              displaySettings: EpubDisplaySettings(
+                  flow: EpubFlow.paginated,
+                  snap: true,
+                  allowScriptedContent: true),
               selectionContextMenu: ContextMenu(
                 menuItems: [
                   ContextMenuItem(
