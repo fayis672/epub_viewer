@@ -2,36 +2,39 @@ A Flutter package for viewing Epub documents, developed by combining the power o
 
 ## Features
 
- - Highlight text
- - Search in Epub
- - List chapters
- - Text selection
- - Highly customizable UI
- - Resume reading using cfi
- - Custom context menus for selection
-
+- Highlight text
+- Search in Epub
+- List chapters
+- Text selection
+- Highly customizable UI
+- Resume reading using cfi
+- Custom context menus for selection
 
 <img width='50%' src="https://github.com/fayis672/epub_viewer/blob/main/example/epub_viewr_exp.gif?raw=true">
 
 ## Limitations
+
 - Loading from local files and assets is not supported
 
 ## Getting started
 
 In your Flutter project add the dependency:
+
 ```shell
-flutter pub add epub_viewer
+flutter pub add flutter_epub_viewer
 ```
--  ### Important: Complete the platfrom-wise setup from [here](https://inappwebview.dev/docs/intro)
- - Enable clear text traffic, [instructions here](https://stackoverflow.com/questions/45940861/android-8-cleartext-http-traffic-not-permitted/50834600#50834600)
- 
- Make sure to follow and complete  each step 
- 
+
+- ### Important: Complete the platfrom-wise setup from [here](https://inappwebview.dev/docs/intro)
+- Enable clear text traffic, [instructions here](https://stackoverflow.com/questions/45940861/android-8-cleartext-http-traffic-not-permitted/50834600#50834600)
+
+Make sure to follow and complete each step
+
 ## Usage
 
 ### Basic usage
+
 ```dart
-import 'package:epub_viewer/epub_viewer.dart';
+import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
 import 'package:flutter/material.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -109,10 +112,12 @@ final  EpubDisplaySettings?  displaySettings;
 ///if null, the default context menu will be used
 final  ContextMenu?  selectionContextMenu;
 ```
+
 ### Methods
-```dart 
+
+```dart
 ///Move epub view to a specific area using Cfi string or chapter href
-epubController.display(cfi:cfiString) 
+epubController.display(cfi:cfiString)
 
 ///moves to next page
 epubController.next()
@@ -154,10 +159,9 @@ epubController.setManager(manager:manager)
 epubController.setFontSize(fontSize:16)
 ```
 
-
 ## Known Issues
 
-- `onRelocated`  callback is broken when `snap` in `epubDisplaySettings==true`
+- `onRelocated` callback is broken when `snap` in `epubDisplaySettings==true`
 
 ## Upcoming features
 
@@ -165,4 +169,3 @@ epubController.setFontSize(fontSize:16)
 - Text extraction
 - More callbacks (rendered, error etc)
 - Support for local files and assets
-
