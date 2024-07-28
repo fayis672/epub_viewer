@@ -59,7 +59,8 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           Expanded(
             child: EpubViewer(
-              epubUrl: 'https://s3.amazonaws.com/moby-dick/OPS/package.opf',
+              epubSource: EpubSource.fromUrl(
+                  'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
               epubController: epubController,
               displaySettings:
                   EpubDisplaySettings(flow: EpubFlow.paginated, snap: true),
@@ -83,8 +84,9 @@ class _MyHomePageState extends State<MyHomePage> {
 //Epub controller to manage epub
 final  EpubController  epubController;
 
-///Epub url to load epub from network
-final  String  epubUrl;
+///Epub source, accepts url, file or assets
+///opf format is not tested, use with caution
+final  String  epubSource;
 
 ///Epub headers to load epub from network
 final  Map<String, String> headers;
