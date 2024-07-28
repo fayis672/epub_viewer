@@ -1,3 +1,8 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:json_annotation/json_annotation.dart';
 part 'helper.g.dart';
 
@@ -118,4 +123,43 @@ class EpubTextSelection {
     required this.selectedText,
     required this.selectionCfi,
   });
+}
+
+class EpubSource {
+  // final Uint8List epubData;
+  final Future<Uint8List> epubData;
+
+  EpubSource._({required this.epubData});
+
+  factory EpubSource.fromFile(File file) {
+    return EpubSource._(epubData: file.readAsBytes());
+  }
+
+  factory EpubSource.fromUrl(String url, {Map<String, String>? headers}) {
+    return EpubSource._(epubData: _downloadFile(url, headers: headers));
+  }
+
+  factory EpubSource.fromAsset(String assetPath) {
+    return EpubSource._(epubData: getAssetData(assetPath));
+  }
+
+  static Future<Uint8List> getAssetData(assetPath) {
+    final byteData = rootBundle.load(assetPath);
+    return byteData.then((val) => val.buffer.asUint8List());
+  }
+
+  static Future<Uint8List> _downloadFile(String url,
+      {Map<String, String>? headers}) async {
+    try {
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        throw Exception('Failed to download file from URL');
+      }
+    } catch (e) {
+      throw Exception('Failed to download file from URL, $e');
+    }
+  }
 }

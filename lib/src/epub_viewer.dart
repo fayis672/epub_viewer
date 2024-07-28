@@ -11,7 +11,8 @@ class EpubViewer extends StatefulWidget {
   const EpubViewer({
     super.key,
     required this.epubController,
-    required this.epubUrl,
+    required this.epubSource,
+    // required this.epubUrl,
     this.headers,
     this.initialCfi,
     this.onChaptersLoaded,
@@ -26,7 +27,8 @@ class EpubViewer extends StatefulWidget {
   final EpubController epubController;
 
   ///Epub url to load epub from network
-  final String epubUrl;
+  // final String epubUrl;
+  final EpubSource epubSource;
 
   ///Epub headers to load epub from network
   final Map<String, String>? headers;
@@ -134,6 +136,25 @@ class _EpubViewerState extends State<EpubViewer> {
           var location = data[0];
           widget.onRelocated?.call(EpubLocation.fromJson(location));
         });
+
+    webViewController?.addJavaScriptHandler(
+        handlerName: "readyToLoad",
+        callback: (data) {
+          loadBook();
+        });
+
+    webViewController?.addJavaScriptHandler(
+        handlerName: "displayError",
+        callback: (data) {
+          // loadBook();
+        });
+  }
+
+  loadBook() async {
+    var data = await widget.epubSource.epubData;
+    // await Future.delayed(const Duration(seconds: 5));
+    webViewController?.evaluateJavascript(
+        source: 'loadBook([${data.join(',')}])');
   }
 
   @override
@@ -155,12 +176,13 @@ class _EpubViewerState extends State<EpubViewer> {
             key: webViewKey,
             initialUrlRequest: URLRequest(
                 url: WebUri(
-                    'http://localhost:8080/html/swipe.html?epubUrl=${widget.epubUrl}&cfi=${widget.initialCfi ?? ''}&displaySettings=$displaySettings&headers=$headers')),
+                    'http://localhost:8080/html/swipe.html?cfi=${widget.initialCfi ?? ''}&displaySettings=$displaySettings&headers=$headers')),
             initialSettings: settings,
             // pullToRefreshController: pullToRefreshController,
-            onWebViewCreated: (controller) {
+            onWebViewCreated: (controller) async {
               webViewController = controller;
               widget.epubController.setWebViewController(controller);
+              // await loadBook();
               addJavaScriptHandlers();
             },
             onLoadStart: (controller, url) {},
@@ -195,6 +217,7 @@ class _EpubViewerState extends State<EpubViewer> {
             },
             onLoadStop: (controller, url) async {},
             onReceivedError: (controller, request, error) {},
+            
             onProgressChanged: (controller, progress) {},
             onUpdateVisitedHistory: (controller, url, androidIsReload) {},
             onConsoleMessage: (controller, consoleMessage) {
