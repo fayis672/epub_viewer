@@ -148,6 +148,15 @@ class _EpubViewerState extends State<EpubViewer> {
         callback: (data) {
           // loadBook();
         });
+
+    webViewController?.addJavaScriptHandler(
+        handlerName: "epubText",
+        callback: (data) {
+          var text = data[0].trim();
+          var cfi = data[1];
+          widget.epubController.pageTextCompleter
+              .complete(EpubTextExtractRes(text: text, cfiRange: cfi));
+        });
   }
 
   loadBook() async {
