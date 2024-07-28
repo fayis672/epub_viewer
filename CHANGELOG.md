@@ -1,3 +1,9 @@
+## 1.1.0
+
+- Added Local file and asset support
+- Added underline annotation
+- Added text content extraction
+
 ## 1.0.2
 
 - Document changes
