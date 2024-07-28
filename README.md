@@ -9,12 +9,13 @@ A Flutter package for viewing Epub documents, developed by combining the power o
 - Highly customizable UI
 - Resume reading using cfi
 - Custom context menus for selection
+- Load from File, URl, Assets
 
 <img width='50%' src="https://github.com/fayis672/epub_viewer/blob/main/example/epub_viewr_exp.gif?raw=true">
 
 ## Limitations
 
-- Loading from local files and assets is not supported
+- opf format not supported fully
 
 ## Getting started
 
