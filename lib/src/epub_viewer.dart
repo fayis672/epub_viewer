@@ -26,8 +26,8 @@ class EpubViewer extends StatefulWidget {
   ///Epub controller to manage epub
   final EpubController epubController;
 
-  ///Epub url to load epub from network
-  // final String epubUrl;
+  ///Epub source, accepts url, file or assets
+  ///opf format is not tested, use with caution
   final EpubSource epubSource;
 
   ///Epub headers to load epub from network
@@ -217,7 +217,7 @@ class _EpubViewerState extends State<EpubViewer> {
             },
             onLoadStop: (controller, url) async {},
             onReceivedError: (controller, request, error) {},
-            
+
             onProgressChanged: (controller, progress) {},
             onUpdateVisitedHistory: (controller, url, androidIsReload) {},
             onConsoleMessage: (controller, consoleMessage) {
