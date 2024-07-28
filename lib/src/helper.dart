@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
@@ -115,8 +114,12 @@ enum EpubManager {
   // epub
 }
 
+///Epub text selection callback object
 class EpubTextSelection {
+  /// The selected text
   final String selectedText;
+
+  /// The cfi string of the selected text
   final String selectionCfi;
 
   EpubTextSelection({
@@ -125,25 +128,29 @@ class EpubTextSelection {
   });
 }
 
+/// Epub file source
 class EpubSource {
   // final Uint8List epubData;
   final Future<Uint8List> epubData;
 
   EpubSource._({required this.epubData});
 
+  ///Loading from a file
   factory EpubSource.fromFile(File file) {
     return EpubSource._(epubData: file.readAsBytes());
   }
 
+  ///load from a url with optional headers
   factory EpubSource.fromUrl(String url, {Map<String, String>? headers}) {
     return EpubSource._(epubData: _downloadFile(url, headers: headers));
   }
 
+  ///load from assets
   factory EpubSource.fromAsset(String assetPath) {
-    return EpubSource._(epubData: getAssetData(assetPath));
+    return EpubSource._(epubData: _getAssetData(assetPath));
   }
 
-  static Future<Uint8List> getAssetData(assetPath) {
+  static Future<Uint8List> _getAssetData(assetPath) {
     final byteData = rootBundle.load(assetPath);
     return byteData.then((val) => val.buffer.asUint8List());
   }
@@ -162,4 +169,20 @@ class EpubSource {
       throw Exception('Failed to download file from URL, $e');
     }
   }
+}
+
+@JsonSerializable(explicitToJson: true)
+
+///Epub text extraction callback object
+class EpubTextExtractRes {
+  String? text;
+  String? cfiRange;
+
+  EpubTextExtractRes({
+    this.text,
+    this.cfiRange,
+  });
+  factory EpubTextExtractRes.fromJson(Map<String, dynamic> json) =>
+      _$EpubTextExtractResFromJson(json);
+  Map<String, dynamic> toJson() => _$EpubTextExtractResToJson(this);
 }

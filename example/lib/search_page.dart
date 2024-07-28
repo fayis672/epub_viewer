@@ -45,6 +45,11 @@ class _SearchPageState extends State<SearchPage> {
                       itemCount: searchResult.length,
                       itemBuilder: (context, index) {
                         return ListTile(
+                          onTap: () {
+                            widget.epubController
+                                .display(cfi: searchResult[index].cfi);
+                            Navigator.pop(context);
+                          },
                           title: HighlightText(
                               text: searchResult[index].excerpt,
                               highlight: query,

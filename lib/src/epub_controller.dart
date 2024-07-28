@@ -102,11 +102,35 @@ class EpubController {
         source: 'addHighlight("$cfi", "$colorHex", "$opacityString")');
   }
 
+  ///Adds a underline annotation
+  addUnderline({required String cfi}) {
+    checkEpubLoaded();
+    webViewController?.evaluateJavascript(source: 'addUnderLine("$cfi")');
+  }
+
+  ///Adds a mark annotation
+  // addMark({required String cfi}) {
+  //   checkEpubLoaded();
+  //   webViewController?.evaluateJavascript(source: 'addMark("$cfi")');
+  // }
+
   ///Removes a highlight from epub viewer
   removeHighlight({required String cfi}) {
     checkEpubLoaded();
     webViewController?.evaluateJavascript(source: 'removeHighlight("$cfi")');
   }
+
+  ///Removes a underline from epub viewer
+  removeUnderline({required String cfi}) {
+    checkEpubLoaded();
+    webViewController?.evaluateJavascript(source: 'removeUnderLine("$cfi")');
+  }
+
+  ///Removes a mark from epub viewer
+  // removeMark({required String cfi}) {
+  //   checkEpubLoaded();
+  //   webViewController?.evaluateJavascript(source: 'removeMark("$cfi")');
+  // }
 
   ///Set [EpubSpread] value
   setSpread({required EpubSpread spread}) async {
@@ -128,6 +152,32 @@ class EpubController {
   setFontSize({required double fontSize}) async {
     await webViewController?.evaluateJavascript(
         source: 'setFontSize("$fontSize")');
+  }
+
+  Completer<EpubTextExtractRes> pageTextCompleter =
+      Completer<EpubTextExtractRes>();
+
+  ///Extract text from a given cfi range,
+  Future<EpubTextExtractRes> extractText({
+    ///start cfi
+    required startCfi,
+
+    ///end cfi
+    required endCfi,
+  }) async {
+    checkEpubLoaded();
+    pageTextCompleter = Completer<EpubTextExtractRes>();
+    await webViewController?.evaluateJavascript(
+        source: 'getTextFromCfi("$startCfi","$endCfi")');
+    return pageTextCompleter.future;
+  }
+
+  ///Extracts text content from current page
+  Future<EpubTextExtractRes> extractCurrentPageText() async {
+    checkEpubLoaded();
+    pageTextCompleter = Completer<EpubTextExtractRes>();
+    await webViewController?.evaluateJavascript(source: 'getCurrentPageText()');
+    return pageTextCompleter.future;
   }
 
   checkEpubLoaded() {

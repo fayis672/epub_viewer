@@ -146,8 +146,14 @@ epubController.addHighlight(
 	opacity:0,5
 )
 
-///remove hightlight
+///remove highlight
 epubController.removeHighlight(cfi:cfi)
+
+///Add underline annotation
+epubController.addUnderline(cfi:cfi)
+
+///Remove underline annotation
+epubController.removeUnderline(cfi:cfi)
 
 ///Set [EpubSpread] value
 epubController.setSpread(spread:spread)
@@ -160,15 +166,20 @@ epubController.setManager(manager:manager)
 
 ///Adjust font size in epub viewer
 epubController.setFontSize(fontSize:16)
+
+///Extract text from a given cfi range
+epubController.extractText(startCfi:cfi,endCfi:cfi)
+
+///Extract text from current page
+epubController.extractCurrentPageText()
 ```
 
 ## Known Issues
 
-- `onRelocated` callback is broken when `snap` in `epubDisplaySettings==true`
+- `onRelocated` callback is broken when `snap==true` in `epubDisplaySettings` for android
 
 ## Upcoming features
 
-- More annotations (underline, mark etc)
-- Text extraction
+- Annotations customization
 - More callbacks (rendered, error etc)
-- Support for local files and assets
+- Reading progress

@@ -101,3 +101,15 @@ const _$EpubDefaultDirectionEnumMap = {
 const _$EpubManagerEnumMap = {
   EpubManager.continuous: 'continuous',
 };
+
+EpubTextExtractRes _$EpubTextExtractResFromJson(Map<String, dynamic> json) =>
+    EpubTextExtractRes(
+      text: json['text'] as String?,
+      cfiRange: json['cfiRange'] as String?,
+    );
+
+Map<String, dynamic> _$EpubTextExtractResToJson(EpubTextExtractRes instance) =>
+    <String, dynamic>{
+      'text': instance.text,
+      'cfiRange': instance.cfiRange,
+    };
