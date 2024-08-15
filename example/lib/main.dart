@@ -53,6 +53,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   var textSelectionCfi = '';
 
+  bool isLoading = true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,39 +82,52 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
         children: [
           Expanded(
-            child: EpubViewer(
-              epubSource: EpubSource.fromUrl(
-                  'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
-              epubController: epubController,
-              displaySettings: EpubDisplaySettings(
-                  flow: EpubFlow.paginated,
-                  snap: true,
-                  allowScriptedContent: true),
-              selectionContextMenu: ContextMenu(
-                menuItems: [
-                  ContextMenuItem(
-                    title: "Highlight",
-                    id: 1,
-                    action: () async {
-                      epubController.addHighlight(cfi: textSelectionCfi);
-                    },
+            child: Stack(
+              children: [
+                EpubViewer(
+                  epubSource: EpubSource.fromUrl(
+                      'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
+                  epubController: epubController,
+                  displaySettings: EpubDisplaySettings(
+                      flow: EpubFlow.paginated,
+                      snap: true,
+                      allowScriptedContent: true),
+                  selectionContextMenu: ContextMenu(
+                    menuItems: [
+                      ContextMenuItem(
+                        title: "Highlight",
+                        id: 1,
+                        action: () async {
+                          epubController.addHighlight(cfi: textSelectionCfi);
+                        },
+                      ),
+                    ],
+                    settings: ContextMenuSettings(
+                        hideDefaultSystemContextMenuItems: true),
                   ),
-                ],
-                settings: ContextMenuSettings(
-                    hideDefaultSystemContextMenuItems: true),
-              ),
-              headers: {},
-              onChaptersLoaded: (chapters) {},
-              onEpubLoaded: () async {
-                print('Epub loaded');
-              },
-              onRelocated: (value) {
-                print("Reloacted to $value");
-              },
-              onTextSelected: (epubTextSelection) {
-                textSelectionCfi = epubTextSelection.selectionCfi;
-                print(textSelectionCfi);
-              },
+                  onChaptersLoaded: (chapters) {
+                    setState(() {
+                      isLoading = false;
+                    });
+                  },
+                  onEpubLoaded: () async {
+                    print('Epub loaded');
+                  },
+                  onRelocated: (value) {
+                    print("Reloacted to $value");
+                  },
+                  onTextSelected: (epubTextSelection) {
+                    textSelectionCfi = epubTextSelection.selectionCfi;
+                    print(textSelectionCfi);
+                  },
+                ),
+                Visibility(
+                  visible: isLoading,
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              ],
             ),
           ),
         ],

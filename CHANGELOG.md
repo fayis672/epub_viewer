@@ -1,3 +1,7 @@
+## 1.1.1
+
+- Fixed book reloading issues
+
 ## 1.1.0
 
 - Added Local file and asset support

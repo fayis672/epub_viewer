@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_epub_viewer/src/epub_controller.dart';
 import 'package:flutter_epub_viewer/src/helper.dart';
 import 'package:flutter/foundation.dart';
@@ -12,8 +10,6 @@ class EpubViewer extends StatefulWidget {
     super.key,
     required this.epubController,
     required this.epubSource,
-    // required this.epubUrl,
-    this.headers,
     this.initialCfi,
     this.onChaptersLoaded,
     this.onEpubLoaded,
@@ -29,9 +25,6 @@ class EpubViewer extends StatefulWidget {
   ///Epub source, accepts url, file or assets
   ///opf format is not tested, use with caution
   final EpubSource epubSource;
-
-  ///Epub headers to load epub from network
-  final Map<String, String>? headers;
 
   ///Initial cfi string to  specify which part of epub to load initially
   ///if null, the first chapter will be loaded
@@ -62,8 +55,6 @@ class EpubViewer extends StatefulWidget {
 
 class _EpubViewerState extends State<EpubViewer> {
   final GlobalKey webViewKey = GlobalKey();
-
-  final LocalServerController localServerController = LocalServerController();
 
   // late PullToRefreshController pullToRefreshController;
   // late ContextMenu contextMenu;
@@ -161,88 +152,83 @@ class _EpubViewerState extends State<EpubViewer> {
 
   loadBook() async {
     var data = await widget.epubSource.epubData;
-    // await Future.delayed(const Duration(seconds: 5));
+    final displaySettings = widget.displaySettings ?? EpubDisplaySettings();
+    String manager = displaySettings.manager.name;
+    String flow = displaySettings.flow.name;
+    String spread = displaySettings.spread.name;
+    bool snap = displaySettings.snap;
+    bool allowScripted = displaySettings.allowScriptedContent;
+    String cfi = widget.initialCfi ?? "";
+
     webViewController?.evaluateJavascript(
-        source: 'loadBook([${data.join(',')}])');
+        source:
+            'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted)');
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: localServerController.initServer(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return Container();
-          }
+    return InAppWebView(
+      contextMenu: widget.selectionContextMenu,
+      key: webViewKey,
+      initialFile:
+          'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+      // initialUrlRequest: URLRequest(
+      //     url: WebUri(
+      //         'http://localhost:8080/html/swipe.html?cfi=${widget.initialCfi ?? ''}&displaySettings=$displaySettings')),
+      initialSettings: settings,
+      // pullToRefreshController: pullToRefreshController,
+      onWebViewCreated: (controller) async {
+        webViewController = controller;
+        widget.epubController.setWebViewController(controller);
+        // await loadBook();
+        addJavaScriptHandlers();
+      },
+      onLoadStart: (controller, url) {},
+      onPermissionRequest: (controller, request) async {
+        return PermissionResponse(
+            resources: request.resources,
+            action: PermissionResponseAction.GRANT);
+      },
+      shouldOverrideUrlLoading: (controller, navigationAction) async {
+        var uri = navigationAction.request.url!;
 
-          final displaySettings = jsonEncode(widget.displaySettings?.toJson() ??
-              EpubDisplaySettings().toJson());
+        if (!["http", "https", "file", "chrome", "data", "javascript", "about"]
+            .contains(uri.scheme)) {
+          // if (await canLaunchUrl(uri)) {
+          //   // Launch the App
+          //   await launchUrl(
+          //     uri,
+          //   );
+          //   // and cancel the request
+          //   return NavigationActionPolicy.CANCEL;
+          // }
+        }
 
-          final headers = jsonEncode(widget.headers);
+        return NavigationActionPolicy.ALLOW;
+      },
+      onLoadStop: (controller, url) async {},
+      onReceivedError: (controller, request, error) {},
 
-          return InAppWebView(
-            contextMenu: widget.selectionContextMenu,
-            key: webViewKey,
-            initialUrlRequest: URLRequest(
-                url: WebUri(
-                    'http://localhost:8080/html/swipe.html?cfi=${widget.initialCfi ?? ''}&displaySettings=$displaySettings&headers=$headers')),
-            initialSettings: settings,
-            // pullToRefreshController: pullToRefreshController,
-            onWebViewCreated: (controller) async {
-              webViewController = controller;
-              widget.epubController.setWebViewController(controller);
-              // await loadBook();
-              addJavaScriptHandlers();
-            },
-            onLoadStart: (controller, url) {},
-            onPermissionRequest: (controller, request) async {
-              return PermissionResponse(
-                  resources: request.resources,
-                  action: PermissionResponseAction.GRANT);
-            },
-            shouldOverrideUrlLoading: (controller, navigationAction) async {
-              var uri = navigationAction.request.url!;
+      onProgressChanged: (controller, progress) {},
+      onUpdateVisitedHistory: (controller, url, androidIsReload) {},
+      onConsoleMessage: (controller, consoleMessage) {
+        if (kDebugMode) {
+          debugPrint("JS_LOG: ${consoleMessage.message}");
+          // debugPrint(consoleMessage.message);
+        }
+      },
+      gestureRecognizers: {
+        Factory<VerticalDragGestureRecognizer>(
+            () => VerticalDragGestureRecognizer()),
+        Factory<LongPressGestureRecognizer>(() => LongPressGestureRecognizer(
+            duration: const Duration(milliseconds: 30))),
+      },
+    );
+  }
 
-              if (![
-                "http",
-                "https",
-                "file",
-                "chrome",
-                "data",
-                "javascript",
-                "about"
-              ].contains(uri.scheme)) {
-                // if (await canLaunchUrl(uri)) {
-                //   // Launch the App
-                //   await launchUrl(
-                //     uri,
-                //   );
-                //   // and cancel the request
-                //   return NavigationActionPolicy.CANCEL;
-                // }
-              }
-
-              return NavigationActionPolicy.ALLOW;
-            },
-            onLoadStop: (controller, url) async {},
-            onReceivedError: (controller, request, error) {},
-
-            onProgressChanged: (controller, progress) {},
-            onUpdateVisitedHistory: (controller, url, androidIsReload) {},
-            onConsoleMessage: (controller, consoleMessage) {
-              if (kDebugMode) {
-                debugPrint("JS_LOG: ${consoleMessage.message}");
-                // debugPrint(consoleMessage.message);
-              }
-            },
-            gestureRecognizers: {
-              Factory<VerticalDragGestureRecognizer>(
-                  () => VerticalDragGestureRecognizer()),
-              Factory<LongPressGestureRecognizer>(() =>
-                  LongPressGestureRecognizer(
-                      duration: const Duration(milliseconds: 30))),
-            },
-          );
-        });
+  @override
+  void dispose() {
+    webViewController?.dispose();
+    super.dispose();
   }
 }

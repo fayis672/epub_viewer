@@ -67,7 +67,7 @@ class EpubDisplaySettings {
   int fontSize;
   EpubSpread spread;
   EpubFlow flow;
-  EpubDefaultDirection? defaultDirection;
+  EpubDefaultDirection defaultDirection;
   bool allowScriptedContent;
   EpubManager manager;
 
@@ -79,7 +79,7 @@ class EpubDisplaySettings {
     this.spread = EpubSpread.auto,
     this.flow = EpubFlow.scrolled,
     this.allowScriptedContent = false,
-    this.defaultDirection,
+    this.defaultDirection = EpubDefaultDirection.ltr,
     this.snap = false,
     this.manager = EpubManager.continuous,
   });
