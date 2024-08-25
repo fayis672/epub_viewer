@@ -127,6 +127,12 @@
         window.flutter_inappwebview.callHandler('displayError');
       })
 
+      rendition.on('markClicked', function(cfiRange){
+        console.log("markClicked")
+        var args = [cfiRange.toString()]
+        window.flutter_inappwebview.callHandler('markClicked',...args);
+      })
+
     }
 
     window.flutter_inappwebview.callHandler('readyToLoad');

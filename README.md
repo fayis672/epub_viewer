@@ -108,6 +108,9 @@ final  ValueChanged<EpubLocation>?  onRelocated;
 ///Call back when text selection changes
 final  ValueChanged<EpubTextSelection>?  onTextSelected;
 
+///Callback for handling annotation click (Highlight and Underline)
+final ValueChanged<String>? onAnnotationClicked;
+
 ///initial display settings
 final  EpubDisplaySettings?  displaySettings;
 
@@ -182,4 +185,5 @@ epubController.extractCurrentPageText()
 
 - Annotations customization
 - More callbacks (rendered, error etc)
+- Night mode and Theme customization
 - Reading progress

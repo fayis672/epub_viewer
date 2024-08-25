@@ -1,3 +1,7 @@
+## 1.1.2
+
+- Added Annotation click handler
+
 ## 1.1.1
 
 - Fixed book reloading issues

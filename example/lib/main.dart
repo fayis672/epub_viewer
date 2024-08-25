@@ -116,6 +116,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   onRelocated: (value) {
                     print("Reloacted to $value");
                   },
+                  onAnnotationClicked: (cfi) {
+                    print("Annotation clicked $cfi");
+                  },
                   onTextSelected: (epubTextSelection) {
                     textSelectionCfi = epubTextSelection.selectionCfi;
                     print(textSelectionCfi);

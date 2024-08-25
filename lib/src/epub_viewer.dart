@@ -17,6 +17,7 @@ class EpubViewer extends StatefulWidget {
     this.onTextSelected,
     this.displaySettings,
     this.selectionContextMenu,
+    this.onAnnotationClicked,
   });
 
   ///Epub controller to manage epub
@@ -44,6 +45,9 @@ class EpubViewer extends StatefulWidget {
 
   ///initial display settings
   final EpubDisplaySettings? displaySettings;
+
+  ///Callback for handling annotation click (Highlight and Underline)
+  final ValueChanged<String>? onAnnotationClicked;
 
   ///context menu for text selection
   ///if null, the default context menu will be used
@@ -138,6 +142,13 @@ class _EpubViewerState extends State<EpubViewer> {
         handlerName: "displayError",
         callback: (data) {
           // loadBook();
+        });
+
+    webViewController?.addJavaScriptHandler(
+        handlerName: "markClicked",
+        callback: (data) {
+          String cfi = data[0];
+          widget.onAnnotationClicked?.call(cfi);
         });
 
     webViewController?.addJavaScriptHandler(
