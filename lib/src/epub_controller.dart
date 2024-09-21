@@ -180,6 +180,16 @@ class EpubController {
     return pageTextCompleter.future;
   }
 
+  ///Given a percentage moves to the corresponding page
+  ///Progress percentage should be between 0.0 and 1.0
+  toProgressPercentage(double progressPercent) {
+    assert(progressPercent >= 0.0 && progressPercent <= 1.0,
+        'Progress percentage must be between 0.0 and 1.0');
+    checkEpubLoaded();
+    webViewController?.evaluateJavascript(
+        source: 'toProgress($progressPercent)');
+  }
+
   checkEpubLoaded() {
     if (webViewController == null) {
       throw Exception(

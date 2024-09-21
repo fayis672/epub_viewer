@@ -114,10 +114,13 @@
 
       //book location changes callback
       rendition.on("relocated", function(location) {
+        var percent = location.start.percentage;
+        // var percentage = Math.floor(percent * 100);
         var location  = {
-        startCfi: location.start.cfi,
-        endCfi:location.end.cfi
-      }
+          startCfi: location.start.cfi,
+          endCfi:location.end.cfi,
+          progress: percent
+        }
         var args = [location]
         window.flutter_inappwebview.callHandler('relocated', ...args);
       });
@@ -131,6 +134,10 @@
         console.log("markClicked")
         var args = [cfiRange.toString()]
         window.flutter_inappwebview.callHandler('markClicked',...args);
+      })
+
+      book.ready.then(function(){
+        book.locations.generate(1600)
       })
 
     }
@@ -160,10 +167,13 @@
 
 
     function getCurrentLocation(){
-     var location  = {
-       startCfi: rendition.location.start.cfi,
-       endCfi: rendition.location.end.cfi
-     }
+      var percent = rendition.location.start.percentage;
+      // var percentage = Math.floor(percent * 100);
+      var location  = {
+        startCfi: rendition.location.start.cfi,
+        endCfi: rendition.location.end.cfi,
+        progress: percent
+      }
       return location; 
     }
 
@@ -223,6 +233,11 @@
 
     function removeMark(cfiString){
          rendition.annotations.remove(cfiString, "mark");
+    }
+
+    function toProgress(progress){
+      var cfi = book.locations.cfiFromPercentage(progress);
+      rendition.display(cfi);
     }
 
     
