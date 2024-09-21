@@ -1,3 +1,7 @@
+## 1.1.3
+
+- Added reading progress
+
 ## 1.1.2
 
 - Added Annotation click handler

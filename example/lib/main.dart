@@ -55,6 +55,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool isLoading = true;
 
+  double progress = 0.0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +83,10 @@ class _MyHomePageState extends State<MyHomePage> {
       body: SafeArea(
           child: Column(
         children: [
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.transparent,
+          ),
           Expanded(
             child: Stack(
               children: [
@@ -115,6 +121,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                   onRelocated: (value) {
                     print("Reloacted to $value");
+                    setState(() {
+                      progress = value.progress;
+                    });
                   },
                   onAnnotationClicked: (cfi) {
                     print("Annotation clicked $cfi");
