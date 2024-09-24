@@ -65,6 +65,7 @@ class _EpubViewerState extends State<EpubViewer> {
   var selectedText = '';
 
   InAppWebViewController? webViewController;
+
   InAppWebViewSettings settings = InAppWebViewSettings(
       isInspectable: kDebugMode,
       javaScriptEnabled: true,
@@ -76,6 +77,7 @@ class _EpubViewerState extends State<EpubViewer> {
       iframeAllowFullscreen: true,
       allowsLinkPreview: false,
       verticalScrollBarEnabled: false,
+      // disableVerticalScroll: true,
       selectionGranularity: SelectionGranularity.CHARACTER);
 
   @override
@@ -186,7 +188,8 @@ class _EpubViewerState extends State<EpubViewer> {
       // initialUrlRequest: URLRequest(
       //     url: WebUri(
       //         'http://localhost:8080/html/swipe.html?cfi=${widget.initialCfi ?? ''}&displaySettings=$displaySettings')),
-      initialSettings: settings,
+      initialSettings: settings
+        ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
       // pullToRefreshController: pullToRefreshController,
       onWebViewCreated: (controller) async {
         webViewController = controller;

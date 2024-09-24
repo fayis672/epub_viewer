@@ -36,7 +36,7 @@
       and (min-device-width : 320px)
       and (max-device-width : 667px) {
         #viewer {
-          /* height: 96.5%; */
+          /* height: 100vh; */
         }
         #viewer iframe {
           /* pointer-events: none; */
@@ -70,6 +70,8 @@
     
 
     function loadBook(data, cfi, manager, flow, spread, snap,allowScriptedContent){
+      var viewportHeight = window.innerHeight;
+      document.getElementById('viewer').style.height = viewportHeight;
       var uint8Array = new Uint8Array(data)
       book.open(uint8Array,)
       rendition = book.renderTo("viewer", {
@@ -77,8 +79,8 @@
         flow: flow,
         // method: "continuous",
         spread:spread,
-        width: "100%",
-        height: "100%",
+        width: "100vw",
+        height: "100vh",
         snap: snap,
         allowScriptedContent: allowScriptedContent,
       });

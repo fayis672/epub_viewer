@@ -1,3 +1,7 @@
+## 1.1.4
+
+- Size fit fixes
+
 ## 1.1.3
 
 - Added reading progress
