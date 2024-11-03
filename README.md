@@ -183,7 +183,8 @@ epubController.toProgressPercentage(progressPercent)
 
 ## Known Issues
 
-- `onRelocated` callback is broken when `snap==true` in `epubDisplaySettings` for android
+- `onRelocated` callback is broken when `useSnapAnimationAndroid==true` in `epubDisplaySettings` for android
+- in `scrolled` flow, chapter navigation breaks initially.
 
 ## Upcoming features
 

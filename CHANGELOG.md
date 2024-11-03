@@ -1,3 +1,9 @@
+## 1.1.5
+- LTR -RTL fixes
+- Sub chapter parsing fixes
+- Fixed `onRelocated` callback on Android
+- Changed Default display settings
+
 ## 1.1.4
 
 - Size fit fixes
