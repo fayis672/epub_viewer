@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_epub_viewer/src/epub_controller.dart';
 import 'package:flutter_epub_viewer/src/helper.dart';
 import 'package:flutter/foundation.dart';
@@ -172,10 +174,15 @@ class _EpubViewerState extends State<EpubViewer> {
     bool snap = displaySettings.snap;
     bool allowScripted = displaySettings.allowScriptedContent;
     String cfi = widget.initialCfi ?? "";
+    String direction = widget.displaySettings?.defaultDirection.name ??
+        EpubDefaultDirection.ltr.name;
+
+    bool useCustomSwipe =
+        Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
     webViewController?.evaluateJavascript(
         source:
-            'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted)');
+            'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe)');
   }
 
   @override

@@ -78,13 +78,18 @@ class EpubDisplaySettings {
   /// Enables swipe between pages
   bool snap;
 
+  ///Uses animation between page snapping when snap is true.
+  /// **Warning:** Using this animation will break `onRelocated` callback
+  final bool useSnapAnimationAndroid;
+
   EpubDisplaySettings({
     this.fontSize = 15,
     this.spread = EpubSpread.auto,
-    this.flow = EpubFlow.scrolled,
+    this.flow = EpubFlow.paginated,
     this.allowScriptedContent = false,
     this.defaultDirection = EpubDefaultDirection.ltr,
-    this.snap = false,
+    this.snap = true,
+    this.useSnapAnimationAndroid = false,
     this.manager = EpubManager.continuous,
   });
   factory EpubDisplaySettings.fromJson(Map<String, dynamic> json) =>

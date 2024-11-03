@@ -96,6 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   epubController: epubController,
                   displaySettings: EpubDisplaySettings(
                       flow: EpubFlow.paginated,
+                      useSnapAnimationAndroid: false,
                       snap: true,
                       allowScriptedContent: true),
                   selectionContextMenu: ContextMenu(
