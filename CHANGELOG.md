@@ -1,3 +1,6 @@
+## 1.1.6
+- Remove Highlight fix
+
 ## 1.1.5
 - LTR -RTL fixes
 - Sub chapter parsing fixes
