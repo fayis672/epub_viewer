@@ -164,6 +164,10 @@
         }
         });
 
+        rendition.themes.register("dark", { "body": { "background": "black", "color": "white"}});
+        rendition.themes.select("dark");
+      
+
     }
 
     window.flutter_inappwebview.callHandler('readyToLoad');
@@ -225,15 +229,6 @@
     
     // adds highlight with given color
     function addHighlight(cfiRange, color, opacity){
-      this.rendition.themes.default({
-      // '::selection': {
-      //   'background': 'rgba(255,255,0, 0.3)'
-      // },
-      // '.epubjs-hl' : {
-      //   'fill': color, 'fill-opacity': '0.3', 'mix-blend-mode': 'multiply',
-      //   // 'background': 'rgba(255,0,0, 0.3)'
-      // }
-      });
       rendition.annotations.highlight(cfiRange, {}, (e) => {
           // console.log("highlight clicked", e.target);
         },"hl", {"fill": color, "fill-opacity": '0.3', "mix-blend-mode": "multiply"});

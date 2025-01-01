@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
@@ -177,6 +178,53 @@ class EpubSource {
     } catch (e) {
       throw Exception('Failed to download file from URL, $e');
     }
+  }
+}
+
+/// 
+class EpubTheme {
+  Color? backgroundColor;
+  Color? foregroundColor;
+
+  EpubTheme._({
+    this.backgroundColor,
+    this.foregroundColor,
+  }); 
+
+
+  ///Uses default themes
+  factory EpubTheme.none(){
+    return EpubTheme._(
+      backgroundColor: null,
+      foregroundColor: null,
+    );
+  }
+
+  /// Uses dark theme, black background and white foreground color
+  factory EpubTheme.dark() {
+    return EpubTheme._(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+    );
+  }
+
+  /// Uses light theme, white background and black foreground color
+  factory EpubTheme.light() {
+    return EpubTheme._(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+    );
+  }
+
+  /// Custom theme option , 
+  factory EpubTheme.custom({
+     Color? backgroundColor,
+     Color? foregroundColor,
+  }) {
+    return EpubTheme._(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+    );
   }
 }
 
