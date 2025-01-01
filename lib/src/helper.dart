@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 part 'helper.g.dart';
 
+/// Epub chapter object
 @JsonSerializable(explicitToJson: true)
 class EpubChapter {
   /// The title of the chapter
@@ -69,11 +70,22 @@ class EpubLocation {
 
 @JsonSerializable(explicitToJson: true, includeIfNull: false)
 class EpubDisplaySettings {
+  /// Font size of the reader
   int fontSize;
+
+  /// Page spread settings
   EpubSpread spread;
+
+  /// Page flow settings
   EpubFlow flow;
+
+  /// Default reading direction
   EpubDefaultDirection defaultDirection;
+
+  /// Allow or disallow scripted content
   bool allowScriptedContent;
+
+  /// Manager type
   EpubManager manager;
 
   /// Enables swipe between pages
@@ -82,6 +94,9 @@ class EpubDisplaySettings {
   ///Uses animation between page snapping when snap is true.
   /// **Warning:** Using this animation will break `onRelocated` callback
   final bool useSnapAnimationAndroid;
+
+  /// Theme of the reader, by default it uses the book theme
+  final EpubTheme? theme;
 
   EpubDisplaySettings({
     this.fontSize = 15,
@@ -92,6 +107,7 @@ class EpubDisplaySettings {
     this.snap = true,
     this.useSnapAnimationAndroid = false,
     this.manager = EpubManager.continuous,
+    this.theme,
   });
   factory EpubDisplaySettings.fromJson(Map<String, dynamic> json) =>
       _$EpubDisplaySettingsFromJson(json);
@@ -181,7 +197,7 @@ class EpubSource {
   }
 }
 
-/// 
+///Class for customizing the theme of the reader
 class EpubTheme {
   Color? backgroundColor;
   Color? foregroundColor;
@@ -189,11 +205,10 @@ class EpubTheme {
   EpubTheme._({
     this.backgroundColor,
     this.foregroundColor,
-  }); 
-
+  });
 
   ///Uses default themes
-  factory EpubTheme.none(){
+  factory EpubTheme.none() {
     return EpubTheme._(
       backgroundColor: null,
       foregroundColor: null,
@@ -216,10 +231,10 @@ class EpubTheme {
     );
   }
 
-  /// Custom theme option , 
+  /// Custom theme option ,
   factory EpubTheme.custom({
-     Color? backgroundColor,
-     Color? foregroundColor,
+    Color? backgroundColor,
+    Color? foregroundColor,
   }) {
     return EpubTheme._(
       backgroundColor: backgroundColor,
