@@ -1,3 +1,6 @@
+## 1.2.0
+- Added Epub Theme with background and foreground color
+
 ## 1.1.6
 - Remove Highlight fix
 

@@ -190,5 +190,3 @@ epubController.toProgressPercentage(progressPercent)
 
 - Annotations customization
 - More callbacks (rendered, error etc)
-- Night mode and Theme customization
-- Reading progress
