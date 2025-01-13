@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_epub_viewer/src/utils.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:json_annotation/json_annotation.dart';
 part 'helper.g.dart';
 
+/// Epub chapter object
 @JsonSerializable(explicitToJson: true)
 class EpubChapter {
   /// The title of the chapter
@@ -68,11 +71,22 @@ class EpubLocation {
 
 @JsonSerializable(explicitToJson: true, includeIfNull: false)
 class EpubDisplaySettings {
+  /// Font size of the reader
   int fontSize;
+
+  /// Page spread settings
   EpubSpread spread;
+
+  /// Page flow settings
   EpubFlow flow;
+
+  /// Default reading direction
   EpubDefaultDirection defaultDirection;
+
+  /// Allow or disallow scripted content
   bool allowScriptedContent;
+
+  /// Manager type
   EpubManager manager;
 
   /// Enables swipe between pages
@@ -81,6 +95,9 @@ class EpubDisplaySettings {
   ///Uses animation between page snapping when snap is true.
   /// **Warning:** Using this animation will break `onRelocated` callback
   final bool useSnapAnimationAndroid;
+
+  /// Theme of the reader, by default it uses the book theme
+  final EpubTheme? theme;
 
   EpubDisplaySettings({
     this.fontSize = 15,
@@ -91,6 +108,7 @@ class EpubDisplaySettings {
     this.snap = true,
     this.useSnapAnimationAndroid = false,
     this.manager = EpubManager.continuous,
+    this.theme,
   });
   factory EpubDisplaySettings.fromJson(Map<String, dynamic> json) =>
       _$EpubDisplaySettingsFromJson(json);
@@ -177,6 +195,44 @@ class EpubSource {
     } catch (e) {
       throw Exception('Failed to download file from URL, $e');
     }
+  }
+}
+
+///Class for customizing the theme of the reader
+class EpubTheme {
+  Color? backgroundColor;
+  Color? foregroundColor;
+
+  EpubTheme._({
+    this.backgroundColor,
+    this.foregroundColor,
+  });
+
+  /// Uses dark theme, black background and white foreground color
+  factory EpubTheme.dark() {
+    return EpubTheme._(
+      backgroundColor: const Color(0xff121212),
+      foregroundColor: Colors.white,
+    );
+  }
+
+  /// Uses light theme, white background and black foreground color
+  factory EpubTheme.light() {
+    return EpubTheme._(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+    );
+  }
+
+  /// Custom theme option ,
+  factory EpubTheme.custom({
+    required Color backgroundColor,
+    required Color foregroundColor,
+  }) {
+    return EpubTheme._(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+    );
   }
 }
 

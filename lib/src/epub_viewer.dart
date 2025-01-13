@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_epub_viewer/src/utils.dart';
 
 class EpubViewer extends StatefulWidget {
   const EpubViewer({
@@ -180,9 +181,14 @@ class _EpubViewerState extends State<EpubViewer> {
     bool useCustomSwipe =
         Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
+    String? backgroundColor =
+        widget.displaySettings?.theme?.backgroundColor?.toHex();
+    String? foregroundColor =
+        widget.displaySettings?.theme?.foregroundColor?.toHex();
+
     webViewController?.evaluateJavascript(
         source:
-            'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe)');
+            'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor")');
   }
 
   @override

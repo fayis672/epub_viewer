@@ -98,6 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       flow: EpubFlow.paginated,
                       useSnapAnimationAndroid: false,
                       snap: true,
+                      theme: EpubTheme.light(),
                       allowScriptedContent: true),
                   selectionContextMenu: ContextMenu(
                     menuItems: [
