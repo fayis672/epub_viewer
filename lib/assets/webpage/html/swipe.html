@@ -69,7 +69,7 @@
 
     
 
-    function loadBook(data, cfi, manager, flow, spread, snap,allowScriptedContent,direction, useCustomSwipe){
+    function loadBook(data, cfi, manager, flow, spread, snap,allowScriptedContent,direction, useCustomSwipe,backgroundColor,foregroundColor){
       var viewportHeight = window.innerHeight;
       document.getElementById('viewer').style.height = viewportHeight;
       var uint8Array = new Uint8Array(data)
@@ -164,9 +164,12 @@
         }
         });
 
-        rendition.themes.register("dark", { "body": { "background": "black", "color": "white"}});
-        rendition.themes.select("dark");
-      
+        //set background and foreground color
+        if (backgroundColor && foregroundColor) {
+          console.log("theme", backgroundColor, foregroundColor)
+          rendition.themes.register("dark", { "body": { "background": backgroundColor, "color": foregroundColor } });
+          rendition.themes.select("dark");
+        }
 
     }
 

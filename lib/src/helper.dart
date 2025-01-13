@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_epub_viewer/src/utils.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:json_annotation/json_annotation.dart';
@@ -207,18 +208,10 @@ class EpubTheme {
     this.foregroundColor,
   });
 
-  ///Uses default themes
-  factory EpubTheme.none() {
-    return EpubTheme._(
-      backgroundColor: null,
-      foregroundColor: null,
-    );
-  }
-
   /// Uses dark theme, black background and white foreground color
   factory EpubTheme.dark() {
     return EpubTheme._(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xff121212),
       foregroundColor: Colors.white,
     );
   }
@@ -233,8 +226,8 @@ class EpubTheme {
 
   /// Custom theme option ,
   factory EpubTheme.custom({
-    Color? backgroundColor,
-    Color? foregroundColor,
+    required Color backgroundColor,
+    required Color foregroundColor,
   }) {
     return EpubTheme._(
       backgroundColor: backgroundColor,
