@@ -286,12 +286,7 @@
     }
 
     function setFontSize(fontSize){
-      rendition.themes.default({
-        p: {
-        // "margin": '10px',
-        "font-size":`${fontSize}px`
-        }
-      });
+      rendition.themes.fontSize(`${fontSize}px`);
     }
 
     //get current page text
