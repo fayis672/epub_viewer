@@ -1,3 +1,9 @@
+## 1.2.1
+- Fixed book loading issues
+- Fixed font size adjust issues
+- Added change theme function
+- Added navigation to first and last pages
+
 ## 1.2.0
 - Added Epub Theme with background and foreground color
 
