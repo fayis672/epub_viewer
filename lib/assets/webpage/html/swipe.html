@@ -168,8 +168,9 @@
         updateTheme(backgroundColor,foregroundColor);
     }
 
-    window.flutter_inappwebview.callHandler('readyToLoad');
-
+    window.addEventListener("flutterInAppWebViewPlatformReady", function(event) {
+      window.flutter_inappwebview.callHandler('readyToLoad');
+    });
     
     //move to next page
     function next(){
