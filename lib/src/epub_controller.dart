@@ -197,6 +197,16 @@ class EpubController {
         source: 'toProgress($progressPercent)');
   }
 
+  ///Moves to the first page of the epub
+  moveToFistPage() {
+    toProgressPercentage(0.0);
+  }
+
+  ///Moves to the last page of the epub
+  moveToLastPage() {
+    toProgressPercentage(1.0);
+  }
+
   checkEpubLoaded() {
     if (webViewController == null) {
       throw Exception(
