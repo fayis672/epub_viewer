@@ -154,6 +154,13 @@ class EpubController {
         source: 'setFontSize("$fontSize")');
   }
 
+  updateTheme({required EpubTheme theme}) async {
+    String? backgroundColor = theme.backgroundColor?.toHex();
+    String? foregroundColor = theme.foregroundColor?.toHex();
+    await webViewController?.evaluateJavascript(
+        source: 'updateTheme("$backgroundColor","$foregroundColor")');
+  }
+
   Completer<EpubTextExtractRes> pageTextCompleter =
       Completer<EpubTextExtractRes>();
 
