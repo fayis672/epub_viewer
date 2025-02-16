@@ -179,6 +179,12 @@ epubController.extractCurrentPageText()
  ///Given a percentage moves to the corresponding page
 ///Progress percentage should be between 0.0 and 1.0
 epubController.toProgressPercentage(progressPercent)
+
+///Move to the first page
+ epubController.moveToFistPage();
+
+///Move to the last page
+ epubController.moveToLastPage();
 ```
 
 ## Known Issues
