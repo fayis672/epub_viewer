@@ -197,14 +197,19 @@ class EpubSource {
   }
 }
 
+///Theme type
+enum EpubThemeType { dark, light, custom }
+
 ///Class for customizing the theme of the reader
 class EpubTheme {
   Color? backgroundColor;
   Color? foregroundColor;
+  EpubThemeType themeType;
 
   EpubTheme._({
     this.backgroundColor,
     this.foregroundColor,
+    required this.themeType,
   });
 
   /// Uses dark theme, black background and white foreground color
@@ -212,6 +217,7 @@ class EpubTheme {
     return EpubTheme._(
       backgroundColor: const Color(0xff121212),
       foregroundColor: Colors.white,
+      themeType: EpubThemeType.dark,
     );
   }
 
@@ -220,6 +226,7 @@ class EpubTheme {
     return EpubTheme._(
       backgroundColor: Colors.white,
       foregroundColor: Colors.black,
+      themeType: EpubThemeType.light,
     );
   }
 
@@ -231,6 +238,7 @@ class EpubTheme {
     return EpubTheme._(
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
+      themeType: EpubThemeType.custom,
     );
   }
 }

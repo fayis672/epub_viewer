@@ -165,12 +165,7 @@
         });
 
         //set background and foreground color
-        if (backgroundColor && foregroundColor) {
-          console.log("theme", backgroundColor, foregroundColor)
-          rendition.themes.register("dark", { "body": { "background": backgroundColor, "color": foregroundColor } });
-          rendition.themes.select("dark");
-        }
-
+        updateTheme(backgroundColor,foregroundColor);
     }
 
     window.flutter_inappwebview.callHandler('readyToLoad');
@@ -319,6 +314,14 @@
         var args = [text,cfiRange]
         window.flutter_inappwebview.callHandler('epubText', ...args);
       })
+    }
+
+    ///update theme
+    function updateTheme(backgroundColor, foregroundColor){
+      if (backgroundColor && foregroundColor) {
+          rendition.themes.register("dark", { "body": { "background": backgroundColor, "color": foregroundColor } });
+          rendition.themes.select("dark");
+        }
     }
 
     const makeRangeCfi = (a, b) => {
