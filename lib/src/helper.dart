@@ -154,35 +154,33 @@ class EpubTextSelection {
   });
 }
 
-/// Epub file source
-class EpubSource {
-  // final Uint8List epubData;
-  final Future<Uint8List> epubData;
 
-  EpubSource._({required this.epubData});
+/// Abstract interface for loading epub data
+abstract class EpubDataLoader {
+  Future<Uint8List> loadData();
+}
 
-  ///Loading from a file
-  factory EpubSource.fromFile(File file) {
-    return EpubSource._(epubData: file.readAsBytes());
+/// File system epub loader implementation
+class FileEpubLoader implements EpubDataLoader {
+  final File file;
+  
+  FileEpubLoader(this.file);
+  
+  @override
+  Future<Uint8List> loadData() {
+    return file.readAsBytes();
   }
+}
 
-  ///load from a url with optional headers
-  factory EpubSource.fromUrl(String url, {Map<String, String>? headers}) {
-    return EpubSource._(epubData: _downloadFile(url, headers: headers));
-  }
-
-  ///load from assets
-  factory EpubSource.fromAsset(String assetPath) {
-    return EpubSource._(epubData: _getAssetData(assetPath));
-  }
-
-  static Future<Uint8List> _getAssetData(assetPath) {
-    final byteData = rootBundle.load(assetPath);
-    return byteData.then((val) => val.buffer.asUint8List());
-  }
-
-  static Future<Uint8List> _downloadFile(String url,
-      {Map<String, String>? headers}) async {
+/// Network/URL epub loader implementation
+class UrlEpubLoader implements EpubDataLoader {
+  final String url;
+  final Map<String, String>? headers;
+  
+  UrlEpubLoader(this.url, {this.headers});
+  
+  @override
+  Future<Uint8List> loadData() async {
     try {
       final response = await http.get(Uri.parse(url), headers: headers);
 
@@ -194,6 +192,45 @@ class EpubSource {
     } catch (e) {
       throw Exception('Failed to download file from URL, $e');
     }
+  }
+}
+
+/// Asset epub loader implementation
+class AssetEpubLoader implements EpubDataLoader {
+  final String assetPath;
+  
+  AssetEpubLoader(this.assetPath);
+  
+  @override
+  Future<Uint8List> loadData() async {
+    final byteData = await rootBundle.load(assetPath);
+    return byteData.buffer.asUint8List();
+  }
+}
+
+/// Epub file source
+class EpubSource {
+  // final Uint8List epubData;
+  final Future<Uint8List> epubData;
+
+  EpubSource._({required this.epubData});
+
+  ///Loading from a file
+  factory EpubSource.fromFile(File file) {
+    final loader = FileEpubLoader(file);
+    return EpubSource._(epubData: loader.loadData());
+  }
+
+  ///load from a url with optional headers
+  factory EpubSource.fromUrl(String url, {Map<String, String>? headers}) {
+    final loader = UrlEpubLoader(url, headers: headers);
+    return EpubSource._(epubData: loader.loadData());
+  }
+
+  ///load from assets
+  factory EpubSource.fromAsset(String assetPath) {
+    final loader = AssetEpubLoader(assetPath);
+    return EpubSource._(epubData: loader.loadData());
   }
 }
 
