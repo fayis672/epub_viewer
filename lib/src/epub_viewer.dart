@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'dart:async';
 import 'package:flutter_epub_viewer/src/epub_controller.dart';
 import 'package:flutter_epub_viewer/src/helper.dart';
 import 'package:flutter/foundation.dart';
@@ -21,6 +21,9 @@ class EpubViewer extends StatefulWidget {
     this.displaySettings,
     this.selectionContextMenu,
     this.onAnnotationClicked,
+    this.onBookmarksUpdated,
+    this.onHighlightsUpdated,
+    this.onMetadataLoaded,
   });
 
   ///Epub controller to manage epub
@@ -52,6 +55,15 @@ class EpubViewer extends StatefulWidget {
   ///Callback for handling annotation click (Highlight and Underline)
   final ValueChanged<String>? onAnnotationClicked;
 
+  ///Callback for when bookmarks are updated
+  final ValueChanged<List<EpubBookmark>>? onBookmarksUpdated;
+
+  ///Callback for when highlights are updated
+  final ValueChanged<List<EpubHighlight>>? onHighlightsUpdated;
+
+  ///Callback for when metadata is loaded
+  final ValueChanged<EpubMetadata>? onMetadataLoaded;
+
   ///context menu for text selection
   ///if null, the default context menu will be used
   final ContextMenu? selectionContextMenu;
@@ -60,7 +72,7 @@ class EpubViewer extends StatefulWidget {
   State<EpubViewer> createState() => _EpubViewerState();
 }
 
-class _EpubViewerState extends State<EpubViewer> {
+class _EpubViewerState extends State<EpubViewer> with WidgetsBindingObserver {
   final GlobalKey webViewKey = GlobalKey();
 
   // late PullToRefreshController pullToRefreshController;
@@ -68,11 +80,32 @@ class _EpubViewerState extends State<EpubViewer> {
   var selectedText = '';
 
   InAppWebViewController? webViewController;
+  bool _isLoading = true;
+  Timer? _scrollDebounce;
 
   InAppWebViewSettings settings = InAppWebViewSettings(
-      isInspectable: kDebugMode,
+      useHybridComposition: true,
       javaScriptEnabled: true,
-      mediaPlaybackRequiresUserGesture: false,
+      domStorageEnabled: true,
+      databaseEnabled: true,
+      clearSessionCache: false,
+      allowFileAccessFromFileURLs: true,
+      allowUniversalAccessFromFileURLs: true,
+      // Performance optimizations
+      cacheEnabled: true,
+      cacheMode: CacheMode.LOAD_CACHE_ELSE_NETWORK,
+      useWideViewPort: false,
+      loadWithOverviewMode: true,
+      javaScriptCanOpenWindowsAutomatically: false,
+      mediaPlaybackRequiresUserGesture: true,
+      // Optimize rendering
+      useShouldInterceptAjaxRequest: true,
+      useShouldInterceptFetchRequest: true,
+      // Improve scrolling performance
+      overScrollMode: OverScrollMode.NEVER,
+      verticalScrollbarThumbColor: const Color(0x00000000),
+      horizontalScrollbarThumbColor: const Color(0x00000000),
+      isInspectable: kDebugMode,
       transparentBackground: true,
       supportZoom: false,
       allowsInlineMediaPlayback: true,
@@ -85,8 +118,22 @@ class _EpubViewerState extends State<EpubViewer> {
 
   @override
   void initState() {
-    // widget.epubController.initServer();
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused) {
+      // App going to background
+      webViewController?.evaluateJavascript(source: 'saveReadingState()');
+      webViewController?.pause(); // Pause WebView to save resources
+    } else if (state == AppLifecycleState.resumed) {
+      // App coming to foreground
+      webViewController?.resume();
+    }
   }
 
   addJavaScriptHandlers() {
@@ -164,11 +211,52 @@ class _EpubViewerState extends State<EpubViewer> {
           widget.epubController.pageTextCompleter
               .complete(EpubTextExtractRes(text: text, cfiRange: cfi));
         });
+
+    webViewController?.addJavaScriptHandler(
+        handlerName: "locationChanged",
+        callback: (args) {
+          if (_scrollDebounce?.isActive ?? false) _scrollDebounce!.cancel();
+          _scrollDebounce = Timer(const Duration(milliseconds: 200), () {
+            // Prefetch next content for smoother reading
+            Future.delayed(const Duration(milliseconds: 300), () {
+              webViewController?.evaluateJavascript(
+                  source: 'prefetchContent()');
+            });
+          });
+        });
+
+    // Add handler for bookmarks updates
+    webViewController?.addJavaScriptHandler(
+        handlerName: "bookmarksUpdated",
+        callback: (data) {
+          final bookmarks = List<EpubBookmark>.from(
+              (data[0] as List).map((e) => EpubBookmark.fromJson(e)));
+          widget.epubController.getBookmarks();
+          widget.onBookmarksUpdated?.call(bookmarks);
+          if (!widget.epubController.bookmarksCompleter.isCompleted) {
+            widget.epubController.bookmarksCompleter.complete(bookmarks);
+          }
+        });
+
+    // Add handler for highlights updates
+    webViewController?.addJavaScriptHandler(
+        handlerName: "highlightsUpdated",
+        callback: (data) {
+          final highlights = List<EpubHighlight>.from(
+              (data[0] as List).map((e) => EpubHighlight.fromJson(e)));
+          widget.epubController.getHighlights();
+          widget.onHighlightsUpdated?.call(highlights);
+          if (widget.epubController.highlightsCompleter != null &&
+              !widget.epubController.highlightsCompleter!.isCompleted) {
+            widget.epubController.highlightsCompleter!.complete(highlights);
+          }
+        });
   }
 
   loadBook() async {
     var data = await widget.epubSource.epubData;
-    final displaySettings = widget.displaySettings ?? EpubDisplaySettings();
+    final displaySettings =
+        widget.displaySettings ?? const EpubDisplaySettings();
     String manager = displaySettings.manager.name;
     String flow = displaySettings.flow.name;
     String spread = displaySettings.spread.name;
@@ -188,71 +276,125 @@ class _EpubViewerState extends State<EpubViewer> {
 
     webViewController?.evaluateJavascript(
         source:
-            'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor")');
+            'loadBook([${data.join(",")}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor")');
+
+    // After loading, try to load saved state
+    Future.delayed(const Duration(milliseconds: 500), () {
+      widget.epubController.loadReadingState();
+
+      // Load metadata if callback is provided
+      if (widget.onMetadataLoaded != null) {
+        widget.epubController.getMetadata().then((metadata) {
+          widget.onMetadataLoaded?.call(metadata);
+        }).catchError((e) {
+          debugPrint("Error loading metadata: $e");
+        });
+      }
+
+      // Load bookmarks if callback is provided
+      if (widget.onBookmarksUpdated != null) {
+        widget.epubController.getBookmarks().then((bookmarks) {
+          widget.onBookmarksUpdated?.call(bookmarks);
+        }).catchError((e) {
+          debugPrint("Error loading bookmarks: $e");
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return InAppWebView(
-      contextMenu: widget.selectionContextMenu,
-      key: webViewKey,
-      initialFile:
-          'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-      initialSettings: settings
-        ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
-      // pullToRefreshController: pullToRefreshController,
-      onWebViewCreated: (controller) async {
-        webViewController = controller;
-        widget.epubController.setWebViewController(controller);
-        // await loadBook();
-        addJavaScriptHandlers();
-      },
-      onLoadStart: (controller, url) {},
-      onPermissionRequest: (controller, request) async {
-        return PermissionResponse(
-            resources: request.resources,
-            action: PermissionResponseAction.GRANT);
-      },
-      shouldOverrideUrlLoading: (controller, navigationAction) async {
-        var uri = navigationAction.request.url!;
+    return Stack(
+      children: [
+        InAppWebView(
+          contextMenu: widget.selectionContextMenu,
+          key: webViewKey,
+          initialFile:
+              'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+          initialSettings: settings
+            ..disableVerticalScroll = widget.displaySettings?.snap ?? false
+            ..disableHorizontalScroll =
+                widget.displaySettings?.flow == EpubFlow.scrolled,
+          onWebViewCreated: (controller) async {
+            webViewController = controller;
+            widget.epubController.setWebViewController(controller);
+            addJavaScriptHandlers();
+          },
+          onLoadStart: (controller, url) {},
+          onPermissionRequest: (controller, request) async {
+            return PermissionResponse(
+                resources: request.resources,
+                action: PermissionResponseAction.GRANT);
+          },
+          shouldOverrideUrlLoading: (controller, navigationAction) async {
+            var uri = navigationAction.request.url!;
 
-        if (!["http", "https", "file", "chrome", "data", "javascript", "about"]
-            .contains(uri.scheme)) {
-          // if (await canLaunchUrl(uri)) {
-          //   // Launch the App
-          //   await launchUrl(
-          //     uri,
-          //   );
-          //   // and cancel the request
-          //   return NavigationActionPolicy.CANCEL;
-          // }
-        }
+            if (![
+              "http",
+              "https",
+              "file",
+              "chrome",
+              "data",
+              "javascript",
+              "about"
+            ].contains(uri.scheme)) {
+              // if (await canLaunchUrl(uri)) {
+              //   // Launch the App
+              //   await launchUrl(
+              //     uri,
+              //   );
+              //   // and cancel the request
+              //   return NavigationActionPolicy.CANCEL;
+              // }
+            }
 
-        return NavigationActionPolicy.ALLOW;
-      },
-      onLoadStop: (controller, url) async {},
-      onReceivedError: (controller, request, error) {},
-
-      onProgressChanged: (controller, progress) {},
-      onUpdateVisitedHistory: (controller, url, androidIsReload) {},
-      onConsoleMessage: (controller, consoleMessage) {
-        if (kDebugMode) {
-          debugPrint("JS_LOG: ${consoleMessage.message}");
-          // debugPrint(consoleMessage.message);
-        }
-      },
-      gestureRecognizers: {
-        Factory<VerticalDragGestureRecognizer>(
-            () => VerticalDragGestureRecognizer()),
-        Factory<LongPressGestureRecognizer>(() => LongPressGestureRecognizer(
-            duration: const Duration(milliseconds: 30))),
-      },
+            return NavigationActionPolicy.ALLOW;
+          },
+          onLoadStop: (controller, url) async {},
+          onReceivedError: (controller, request, error) {},
+          onProgressChanged: (controller, progress) {
+            setState(() {
+              _isLoading = progress < 100;
+            });
+          },
+          onUpdateVisitedHistory: (controller, url, androidIsReload) {},
+          onConsoleMessage: (controller, consoleMessage) {
+            if (kDebugMode) {
+              debugPrint("JS_LOG: ${consoleMessage.message}");
+              // debugPrint(consoleMessage.message);
+            }
+          },
+          gestureRecognizers: {
+            Factory<VerticalDragGestureRecognizer>(
+              () => VerticalDragGestureRecognizer()
+                ..onStart = (details) {
+                  // debugPrint("onStart");
+                }
+                ..onUpdate = (details) {
+                  // debugPrint("onUpdate");
+                }
+                ..onEnd = (details) {
+                  // debugPrint("onEnd");
+                },
+            ),
+          },
+        ),
+        if (_isLoading)
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+      ],
     );
   }
 
   @override
   void dispose() {
-    webViewController?.dispose();
+    // Save state before disposing
+    webViewController?.evaluateJavascript(source: 'saveReadingState()');
+    if (_scrollDebounce?.isActive ?? false) {
+      _scrollDebounce!.cancel();
+    }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 }

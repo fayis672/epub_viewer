@@ -1,8 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_epub_viewer/src/helper.dart';
 import 'package:flutter_epub_viewer/src/utils.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class EpubController {
@@ -10,6 +10,31 @@ class EpubController {
 
   ///List of chapters from epub
   List<EpubChapter> _chapters = [];
+
+  ///List of bookmarks
+  List<EpubBookmark> _bookmarks = [];
+
+  ///List of highlights
+  List<EpubHighlight> _highlights = [];
+
+  /// Completer for highlights updated callback
+  Completer<List<EpubHighlight>>? _highlightsCompleter;
+
+  /// Getter for the highlights completer
+  Completer<List<EpubHighlight>>? get highlightsCompleter =>
+      _highlightsCompleter;
+
+  ///Current font size
+  double _fontSize = 16.0;
+
+  ///Current font family
+  String _fontFamily = 'sans-serif';
+
+  ///Current line height
+  String _lineHeight = '1.5';
+
+  ///Current theme name
+  String _currentTheme = 'default';
 
   setWebViewController(InAppWebViewController controller) {
     webViewController = controller;
@@ -85,21 +110,17 @@ class EpubController {
   }
 
   ///Adds a highlight to epub viewer
-  addHighlight({
-    ///Cfi string of the desired location
-    required String cfi,
-
-    ///Color of the highlight
-    Color color = Colors.yellow,
-
-    ///Opacity of the highlight
-    double opacity = 0.3,
-  }) {
-    var colorHex = color.toHex();
-    var opacityString = opacity.toString();
+  Future<String> addHighlight(EpubHighlight highlight) async {
+    _highlightsCompleter = Completer<List<EpubHighlight>>();
+    final colorHex = highlight.color;
+    final opacityString = highlight.opacity.toString();
+    final text = highlight.text;
     checkEpubLoaded();
-    webViewController?.evaluateJavascript(
-        source: 'addHighlight("$cfi", "$colorHex", "$opacityString")');
+    final result = await webViewController?.evaluateJavascript(
+        source:
+            'addHighlight("${highlight.cfi}", "$colorHex", "$opacityString", "$text")');
+    await _highlightsCompleter?.future;
+    return result as String;
   }
 
   ///Adds a underline annotation
@@ -108,16 +129,14 @@ class EpubController {
     webViewController?.evaluateJavascript(source: 'addUnderLine("$cfi")');
   }
 
-  ///Adds a mark annotation
-  // addMark({required String cfi}) {
-  //   checkEpubLoaded();
-  //   webViewController?.evaluateJavascript(source: 'addMark("$cfi")');
-  // }
-
   ///Removes a highlight from epub viewer
-  removeHighlight({required String cfi}) {
+  Future<String?> removeHighlight(String cfi) async {
+    _highlightsCompleter = Completer<List<EpubHighlight>>();
     checkEpubLoaded();
-    webViewController?.evaluateJavascript(source: 'removeHighlight("$cfi")');
+    final result = await webViewController?.evaluateJavascript(
+        source: 'removeHighlight("$cfi")');
+    await _highlightsCompleter?.future;
+    return result as String?;
   }
 
   ///Removes a underline from epub viewer
@@ -125,12 +144,6 @@ class EpubController {
     checkEpubLoaded();
     webViewController?.evaluateJavascript(source: 'removeUnderLine("$cfi")');
   }
-
-  ///Removes a mark from epub viewer
-  // removeMark({required String cfi}) {
-  //   checkEpubLoaded();
-  //   webViewController?.evaluateJavascript(source: 'removeMark("$cfi")');
-  // }
 
   ///Set [EpubSpread] value
   setSpread({required EpubSpread spread}) async {
@@ -142,6 +155,43 @@ class EpubController {
     await webViewController?.evaluateJavascript(source: 'setFlow("$flow")');
   }
 
+  /// Apply multiple settings at once to reduce layout recalculations
+  Future<void> applySettings({
+    double? fontSize,
+    String? fontFamily,
+    String? lineHeight,
+    EpubTheme? theme,
+    EpubSpread? spread,
+    EpubFlow? flow,
+  }) async {
+    checkEpubLoaded();
+
+    // Update local state
+    if (fontSize != null) _fontSize = fontSize;
+    if (fontFamily != null) _fontFamily = fontFamily;
+    if (lineHeight != null) _lineHeight = lineHeight;
+
+    // Create settings JSON
+    final Map<String, dynamic> settings = {};
+    if (fontSize != null) settings['fontSize'] = fontSize;
+    if (fontFamily != null) settings['fontFamily'] = fontFamily;
+    if (lineHeight != null) settings['lineHeight'] = lineHeight;
+    if (theme != null) {
+      settings['theme'] = {
+        'backgroundColor': theme.backgroundColor?.value,
+        'foregroundColor': theme.foregroundColor?.value,
+        'themeType': theme.themeType.toString().split('.').last,
+      };
+    }
+    if (spread != null) settings['spread'] = spread.toString().split('.').last;
+    if (flow != null) settings['flow'] = flow.toString().split('.').last;
+
+    // Apply settings in a single JS call
+    final settingsJson = jsonEncode(settings);
+    await webViewController?.evaluateJavascript(
+        source: 'applySettingsBatch($settingsJson)');
+  }
+
   ///Set [EpubManager] value
   setManager({required EpubManager manager}) async {
     await webViewController?.evaluateJavascript(
@@ -149,9 +199,10 @@ class EpubController {
   }
 
   ///Adjust font size in epub viewer
-  setFontSize({required double fontSize}) async {
-    await webViewController?.evaluateJavascript(
-        source: 'setFontSize("$fontSize")');
+  setFontSize(double size) {
+    _fontSize = size;
+    checkEpubLoaded();
+    webViewController?.evaluateJavascript(source: 'setFontSize($size)');
   }
 
   updateTheme({required EpubTheme theme}) async {
@@ -205,6 +256,210 @@ class EpubController {
   ///Moves to the last page of the epub
   moveToLastPage() {
     toProgressPercentage(1.0);
+  }
+
+  /// Get the current font size
+  double get fontSize => _fontSize;
+
+  /// Get the current font family
+  String get fontFamily => _fontFamily;
+
+  /// Get the current line height
+  String get lineHeight => _lineHeight;
+
+  /// Get the current theme name
+  String get currentTheme => _currentTheme;
+
+  /// Get the list of bookmarks
+  List<EpubBookmark> get bookmarks => _bookmarks;
+
+  /// Completer for bookmarks updated callback
+  Completer<List<EpubBookmark>> bookmarksCompleter =
+      Completer<List<EpubBookmark>>();
+
+  /// Completer for metadata callback
+  Completer<EpubMetadata> metadataCompleter = Completer<EpubMetadata>();
+
+  /// Set font family for the book content
+  Future<void> setFont({required String family}) async {
+    _fontFamily = family;
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'setFont("$family")');
+  }
+
+  /// Set line height for the book content
+  Future<void> setLineHeight({required String height}) async {
+    _lineHeight = height;
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(
+        source: 'setLineHeight("$height")');
+  }
+
+  /// Toggle spreads mode (single or double page view)
+  Future<void> toggleSpreads({required String spread}) async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(
+        source: 'toggleSpreads("$spread")');
+  }
+
+  /// Resize the viewport
+  Future<void> setViewportSize(
+      {required int width, required int height}) async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(
+        source: 'setViewportSize($width, $height)');
+  }
+
+  /// Go to the first page of the book
+  Future<void> firstPage() async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'firstPage()');
+  }
+
+  /// Go to the last page of the book
+  Future<void> lastPage() async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'lastPage()');
+  }
+
+  /// Go to a specific chapter by ID
+  Future<void> gotoChapter({required String chapterId}) async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(
+        source: 'gotoChapter("$chapterId")');
+  }
+
+  /// Add a bookmark at the current location
+  Future<String> addBookmark() async {
+    checkEpubLoaded();
+    bookmarksCompleter = Completer<List<EpubBookmark>>();
+    final result =
+        await webViewController?.evaluateJavascript(source: 'addBookmark()');
+    await bookmarksCompleter.future;
+    return result as String;
+  }
+
+  /// Remove a bookmark by its CFI
+  Future<void> removeBookmark({required String cfi}) async {
+    checkEpubLoaded();
+    bookmarksCompleter = Completer<List<EpubBookmark>>();
+    await webViewController?.evaluateJavascript(
+        source: 'removeBookmark("$cfi")');
+    await bookmarksCompleter.future;
+  }
+
+  /// Get all bookmarks
+  Future<List<EpubBookmark>> getBookmarks() async {
+    checkEpubLoaded();
+    final result =
+        await webViewController?.evaluateJavascript(source: 'bookmarks');
+    if (result != null) {
+      _bookmarks = List<EpubBookmark>.from(
+          (result as List).map((e) => EpubBookmark.fromJson(e)));
+    }
+    return _bookmarks;
+  }
+
+  /// Get all highlights
+  Future<List<EpubHighlight>> getHighlights() async {
+    checkEpubLoaded();
+    final result =
+        await webViewController?.evaluateJavascript(source: 'highlights');
+    if (result != null) {
+      _highlights = List<EpubHighlight>.from(
+          (result as List).map((e) => EpubHighlight.fromJson(e)));
+    }
+    return _highlights;
+  }
+
+  /// Go to a bookmarked location
+  Future<void> goTo({required String cfi}) async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'goTo("$cfi")');
+  }
+
+  /// Get book metadata
+  Future<EpubMetadata> getMetadata() async {
+    checkEpubLoaded();
+    metadataCompleter = Completer<EpubMetadata>();
+    final result =
+        await webViewController?.evaluateJavascript(source: 'getMetadata()');
+    if (result != null) {
+      return EpubMetadata.fromJson(result);
+    }
+    throw Exception("Failed to get metadata");
+  }
+
+  /// Register a new theme with custom styles
+  Future<void> registerTheme(
+      {required String name, required Map<String, dynamic> styles}) async {
+    checkEpubLoaded();
+    final stylesJson = jsonEncode(styles);
+    await webViewController?.evaluateJavascript(
+        source: 'registerTheme("$name", $stylesJson)');
+    _currentTheme = name;
+  }
+
+  /// Select a theme by name
+  Future<void> selectTheme({required String name}) async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'selectTheme("$name")');
+    _currentTheme = name;
+  }
+
+  /// Export all annotations as JSON
+  Future<String> exportAnnotations() async {
+    checkEpubLoaded();
+    final result = await webViewController?.evaluateJavascript(
+        source: 'exportAnnotations()');
+    return result as String;
+  }
+
+  /// Import annotations from JSON
+  Future<void> importAnnotations({required String json}) async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(
+        source: 'importAnnotations(${jsonEncode(json)})');
+  }
+
+  /// Display table of contents
+  Future<List<EpubChapter>> displayTOC() async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'displayTOC()');
+    return _chapters;
+  }
+
+  /// Go to a specific page number
+  Future<void> goToPage({required int pageNumber}) async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(
+        source: 'goToPage($pageNumber)');
+  }
+
+  /// Save the current reading state
+  Future<void> saveReadingState() async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'saveReadingState()');
+  }
+
+  /// Load reading state from localStorage
+  Future<void> loadReadingState() async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'loadReadingState()');
+  }
+
+  /// Clear memory cache to reduce memory usage
+  Future<void> clearMemoryCache() async {
+    checkEpubLoaded();
+    await InAppWebViewController.clearAllCache();
+    // Clear JavaScript memory
+    await webViewController?.evaluateJavascript(source: 'clearMemoryCache()');
+  }
+
+  /// Prefetch content for smoother reading
+  Future<void> prefetchContent() async {
+    checkEpubLoaded();
+    await webViewController?.evaluateJavascript(source: 'prefetchContent()');
   }
 
   checkEpubLoaded() {

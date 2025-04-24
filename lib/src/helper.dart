@@ -19,7 +19,7 @@ class EpubChapter {
   /// The subchapters of the chapter
   final List<EpubChapter> subitems;
 
-  EpubChapter({
+  const EpubChapter({
     required this.title,
     required this.href,
     required this.id,
@@ -33,15 +33,16 @@ class EpubChapter {
 @JsonSerializable(explicitToJson: true)
 class EpubSearchResult {
   /// The cfi string search result
-  String cfi;
+  final String cfi;
 
   /// The excerpt of the search result
-  String excerpt;
+  final String excerpt;
 
-  EpubSearchResult({
+  const EpubSearchResult({
     required this.cfi,
     required this.excerpt,
   });
+
   factory EpubSearchResult.fromJson(Map<String, dynamic> json) =>
       _$EpubSearchResultFromJson(json);
   Map<String, dynamic> toJson() => _$EpubSearchResultToJson(this);
@@ -50,18 +51,18 @@ class EpubSearchResult {
 @JsonSerializable(explicitToJson: true)
 class EpubLocation {
   /// Start cfi string of the page
-  String startCfi;
+  final String? startCfi;
 
   /// End cfi string of the page
-  String endCfi;
+  final String? endCfi;
 
   /// Progress percentage of location, value between 0.0 and 1.0
-  double progress;
+  final double progress;
 
-  EpubLocation({
-    required this.startCfi,
-    required this.endCfi,
-    required this.progress,
+  const EpubLocation({
+    this.startCfi,
+    this.endCfi,
+    this.progress = 0,
   });
   factory EpubLocation.fromJson(Map<String, dynamic> json) =>
       _$EpubLocationFromJson(json);
@@ -71,34 +72,35 @@ class EpubLocation {
 @JsonSerializable(explicitToJson: true, includeIfNull: false)
 class EpubDisplaySettings {
   /// Font size of the reader
-  int fontSize;
+  final int fontSize;
 
   /// Page spread settings
-  EpubSpread spread;
+  final EpubSpread spread;
 
   /// Page flow settings
-  EpubFlow flow;
+  final EpubFlow flow;
 
   /// Default reading direction
-  EpubDefaultDirection defaultDirection;
+  final EpubDefaultDirection defaultDirection;
 
   /// Allow or disallow scripted content
-  bool allowScriptedContent;
+  final bool allowScriptedContent;
 
   /// Manager type
-  EpubManager manager;
+  final EpubManager manager;
 
   /// Enables swipe between pages
-  bool snap;
+  final bool snap;
 
   ///Uses animation between page snapping when snap is true.
   /// **Warning:** Using this animation will break `onRelocated` callback
   final bool useSnapAnimationAndroid;
 
   /// Theme of the reader, by default it uses the book theme
+  @JsonKey(fromJson: _themeFromJson, toJson: _themeToJson)
   final EpubTheme? theme;
 
-  EpubDisplaySettings({
+  const EpubDisplaySettings({
     this.fontSize = 15,
     this.spread = EpubSpread.auto,
     this.flow = EpubFlow.paginated,
@@ -112,6 +114,40 @@ class EpubDisplaySettings {
   factory EpubDisplaySettings.fromJson(Map<String, dynamic> json) =>
       _$EpubDisplaySettingsFromJson(json);
   Map<String, dynamic> toJson() => _$EpubDisplaySettingsToJson(this);
+
+  // Helper methods for theme JSON conversion
+  static EpubTheme? _themeFromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+
+    final themeType = EpubThemeType.values.firstWhere(
+      (e) => e.toString() == 'EpubThemeType.${json["themeType"]}',
+      orElse: () => EpubThemeType.light,
+    );
+
+    final backgroundColor = json['backgroundColor'] != null
+        ? Color(json['backgroundColor'] as int)
+        : null;
+
+    final foregroundColor = json['foregroundColor'] != null
+        ? Color(json['foregroundColor'] as int)
+        : null;
+
+    return EpubTheme(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      themeType: themeType,
+    );
+  }
+
+  static Map<String, dynamic>? _themeToJson(EpubTheme? theme) {
+    if (theme == null) return null;
+
+    return {
+      'backgroundColor': theme.backgroundColor?.value,
+      'foregroundColor': theme.foregroundColor?.value,
+      'themeType': theme.themeType.toString().split('.').last,
+    };
+  }
 }
 
 enum EpubSpread {
@@ -154,7 +190,6 @@ class EpubTextSelection {
   });
 }
 
-
 /// Abstract interface for loading epub data
 abstract class EpubDataLoader {
   Future<Uint8List> loadData();
@@ -163,9 +198,9 @@ abstract class EpubDataLoader {
 /// File system epub loader implementation
 class FileEpubLoader implements EpubDataLoader {
   final File file;
-  
+
   FileEpubLoader(this.file);
-  
+
   @override
   Future<Uint8List> loadData() {
     return file.readAsBytes();
@@ -176,9 +211,9 @@ class FileEpubLoader implements EpubDataLoader {
 class UrlEpubLoader implements EpubDataLoader {
   final String url;
   final Map<String, String>? headers;
-  
+
   UrlEpubLoader(this.url, {this.headers});
-  
+
   @override
   Future<Uint8List> loadData() async {
     try {
@@ -198,9 +233,9 @@ class UrlEpubLoader implements EpubDataLoader {
 /// Asset epub loader implementation
 class AssetEpubLoader implements EpubDataLoader {
   final String assetPath;
-  
+
   AssetEpubLoader(this.assetPath);
-  
+
   @override
   Future<Uint8List> loadData() async {
     final byteData = await rootBundle.load(assetPath);
@@ -243,6 +278,14 @@ class EpubTheme {
   Color? foregroundColor;
   EpubThemeType themeType;
 
+  /// Default constructor
+  EpubTheme({
+    this.backgroundColor,
+    this.foregroundColor,
+    required this.themeType,
+  });
+
+  /// Private constructor for internal use
   EpubTheme._({
     this.backgroundColor,
     this.foregroundColor,
@@ -280,18 +323,173 @@ class EpubTheme {
   }
 }
 
-@JsonSerializable(explicitToJson: true)
+/// JSON converter for EpubTheme
+class EpubThemeConverter
+    implements JsonConverter<EpubTheme?, Map<String, dynamic>?> {
+  const EpubThemeConverter();
+
+  @override
+  EpubTheme? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+
+    final themeType = EpubThemeType.values.firstWhere(
+      (e) => e.toString() == 'EpubThemeType.${json["themeType"]}',
+      orElse: () => EpubThemeType.light,
+    );
+
+    final backgroundColor = json['backgroundColor'] != null
+        ? Color(json['backgroundColor'] as int)
+        : null;
+
+    final foregroundColor = json['foregroundColor'] != null
+        ? Color(json['foregroundColor'] as int)
+        : null;
+
+    return EpubTheme(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      themeType: themeType,
+    );
+  }
+
+  @override
+  Map<String, dynamic>? toJson(EpubTheme? theme) {
+    if (theme == null) return null;
+
+    return {
+      'backgroundColor': theme.backgroundColor?.value,
+      'foregroundColor': theme.foregroundColor?.value,
+      'themeType': theme.themeType.toString().split('.').last,
+    };
+  }
+}
 
 ///Epub text extraction callback object
+@JsonSerializable(explicitToJson: true)
 class EpubTextExtractRes {
-  String? text;
-  String? cfiRange;
+  final String? text;
+  final String? cfiRange;
 
   EpubTextExtractRes({
     this.text,
     this.cfiRange,
   });
+
   factory EpubTextExtractRes.fromJson(Map<String, dynamic> json) =>
       _$EpubTextExtractResFromJson(json);
+
   Map<String, dynamic> toJson() => _$EpubTextExtractResToJson(this);
+}
+
+/// Represents a bookmark in the EPUB book
+@JsonSerializable(explicitToJson: true)
+class EpubBookmark {
+  /// The CFI string of the bookmark location
+  final String cfi;
+
+  /// The title or description of the bookmark
+  final String title;
+
+  /// The timestamp when the bookmark was created
+  final String created;
+
+  EpubBookmark({
+    required this.cfi,
+    required this.title,
+    required this.created,
+  });
+
+  factory EpubBookmark.fromJson(Map<String, dynamic> json) =>
+      _$EpubBookmarkFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EpubBookmarkToJson(this);
+}
+
+class EpubHighlight {
+  /// The CFI string of the highlight location
+  final String cfi;
+
+  /// The text that is highlighted
+  final String text;
+
+  /// The color of the highlight
+  final String color;
+
+  /// The opacity of the highlight
+  final double opacity;
+
+  /// The timestamp when the highlight was created
+  final String created;
+
+  EpubHighlight({
+    required this.cfi,
+    required this.text,
+    required this.color,
+    required this.opacity,
+    required this.created,
+  });
+
+  factory EpubHighlight.fromJson(Map<String, dynamic> json) {
+    return EpubHighlight(
+      cfi: json['cfi'] as String,
+      text: json['text'] as String,
+      color: json['color'] as String,
+      opacity: double.parse(json['opacity']),
+      created: json['created'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'cfi': cfi,
+      'text': text,
+      'color': color,
+      'opacity': opacity.toString(),
+      'created': created,
+    };
+  }
+}
+
+/// Represents book metadata
+@JsonSerializable(explicitToJson: true)
+class EpubMetadata {
+  /// The title of the book
+  final String? title;
+
+  /// The author/creator of the book
+  final String? creator;
+
+  /// The publisher of the book
+  final String? publisher;
+
+  /// The language of the book
+  final String? language;
+
+  /// The publication date
+  final String? pubdate;
+
+  /// The last modified date
+  final String? modifiedDate;
+
+  /// Copyright information
+  final String? rights;
+
+  /// Book description
+  final String? description;
+
+  EpubMetadata({
+    this.title,
+    this.creator,
+    this.publisher,
+    this.language,
+    this.pubdate,
+    this.modifiedDate,
+    this.rights,
+    this.description,
+  });
+
+  factory EpubMetadata.fromJson(Map<String, dynamic> json) =>
+      _$EpubMetadataFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EpubMetadataToJson(this);
 }
