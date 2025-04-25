@@ -4,9 +4,14 @@ import 'search_page.dart';
 import 'chapter_drawer.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({
+    super.key,
+    required this.title,
+    required this.url,
+  });
 
   final String title;
+  final String url;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -142,7 +147,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           const SizedBox(height: 10),
           // Text Increase Button
           FloatingActionButton(
-            heroTag: 'settings',
+            heroTag: 'text_increase',
             onPressed: () {
               setState(() {
                 fontSize += 1;
@@ -160,7 +165,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           const SizedBox(height: 10),
           // Text Decrease Button
           FloatingActionButton(
-            heroTag: 'settings',
+            heroTag: 'text_decrease',
             onPressed: () {
               setState(() {
                 fontSize -= 1;
@@ -195,7 +200,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           const SizedBox(height: 10),
           // Memory cache button
           FloatingActionButton(
-            heroTag: 'cache',
+            heroTag: 'memory_cache',
             onPressed: () {
               // Clear memory cache when needed
               epubController.clearMemoryCache();
@@ -209,7 +214,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           const SizedBox(height: 10),
           // Memory cache button
           FloatingActionButton(
-            heroTag: 'storage',
+            heroTag: 'local_storage',
             onPressed: () async {
               final ctx = context;
               final type = await showModalBottomSheet<ClearStorageType>(
@@ -259,8 +264,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             child: Stack(
               children: [
                 EpubViewer(
-                  epubSource: EpubSource.fromUrl(
-                      'https://github.com/IDPF/epub3-samples/releases/download/20230704/moby-dick-mo.epub'),
+                  epubSource: EpubSource.fromUrl(widget.url),
                   epubController: epubController,
                   displaySettings: EpubDisplaySettings(
                     flow: EpubFlow.paginated,
