@@ -130,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             heroTag: 'bookmark',
             onPressed: () async {
               final ctx = context;
-              await epubController.addBookmark();
+              await epubController.addBookmark(customTitle: 'Custom Title');
               if (!ctx.mounted) return;
               ScaffoldMessenger.of(ctx).showSnackBar(
                 const SnackBar(content: Text('Bookmark added')),
@@ -206,6 +206,46 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             tooltip: 'Clear Cache',
             child: const Icon(Icons.cleaning_services),
           ),
+          const SizedBox(height: 10),
+          // Memory cache button
+          FloatingActionButton(
+            heroTag: 'storage',
+            onPressed: () async {
+              final ctx = context;
+              final type = await showModalBottomSheet<ClearStorageType>(
+                context: context,
+                builder: (context) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children:
+                        List.generate(ClearStorageType.values.length, (index) {
+                      final storageType = ClearStorageType.values[index];
+                      return ListTile(
+                        title: Text(storageType.name),
+                        onTap: () {
+                          Navigator.pop(context, storageType);
+                        },
+                      );
+                    }),
+                  );
+                },
+              );
+
+              // Clear memory cache when needed
+              if (type != null) {
+                await epubController.clearStorage(type: type);
+                if (!ctx.mounted) return;
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(
+                    content: Text('Local Storage Cleared ${type.value}'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            tooltip: 'Clear Cache',
+            child: const Icon(Icons.delete_outlined),
+          ),
         ],
       ),
       body: SafeArea(
@@ -220,7 +260,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               children: [
                 EpubViewer(
                   epubSource: EpubSource.fromUrl(
-                      'https://archive.org/download/EPUBGLOBALQURAN/MY%20GLOBAL%20QURAN%20COMPLATED.epub'),
+                      'https://github.com/IDPF/epub3-samples/releases/download/20230704/moby-dick-mo.epub'),
                   epubController: epubController,
                   displaySettings: EpubDisplaySettings(
                     flow: EpubFlow.paginated,

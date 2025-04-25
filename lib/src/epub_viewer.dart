@@ -24,6 +24,7 @@ class EpubViewer extends StatefulWidget {
     this.onBookmarksUpdated,
     this.onHighlightsUpdated,
     this.onMetadataLoaded,
+    this.onStorageCleared,
   });
 
   ///Epub controller to manage epub
@@ -63,6 +64,9 @@ class EpubViewer extends StatefulWidget {
 
   ///Callback for when metadata is loaded
   final ValueChanged<EpubMetadata>? onMetadataLoaded;
+
+  ///Callback for when storage is cleared
+  final ValueChanged<String>? onStorageCleared;
 
   ///context menu for text selection
   ///if null, the default context menu will be used
@@ -250,6 +254,20 @@ class _EpubViewerState extends State<EpubViewer> with WidgetsBindingObserver {
               !widget.epubController.highlightsCompleter!.isCompleted) {
             widget.epubController.highlightsCompleter!.complete(highlights);
           }
+        });
+
+    // Add handler for storage cleared event
+    webViewController?.addJavaScriptHandler(
+        handlerName: "storageCleared",
+        callback: (data) {
+          final type = data[0] as String;
+          // Notify the controller that storage has been cleared
+          if (widget.epubController.storageCleared != null &&
+              !widget.epubController.storageCleared!.isCompleted) {
+            widget.epubController.storageCleared!.complete(type);
+          }
+          // Notify any listeners that storage has been cleared
+          widget.onStorageCleared?.call(type);
         });
   }
 

@@ -5,6 +5,8 @@ import 'package:flutter_epub_viewer/src/helper.dart';
 import 'package:flutter_epub_viewer/src/utils.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
+import 'clear_storage_type.dart';
+
 class EpubController {
   InAppWebViewController? webViewController;
 
@@ -330,11 +332,14 @@ class EpubController {
   }
 
   /// Add a bookmark at the current location
-  Future<String> addBookmark() async {
+  /// [customTitle] Optional custom title for the bookmark
+  Future<String> addBookmark({String? customTitle}) async {
     checkEpubLoaded();
     bookmarksCompleter = Completer<List<EpubBookmark>>();
-    final result =
-        await webViewController?.evaluateJavascript(source: 'addBookmark()');
+    final result = await webViewController?.evaluateJavascript(
+        source: customTitle != null
+            ? 'addBookmark("${customTitle.replaceAll('"', '\\"')}")'
+            : 'addBookmark()');
     await bookmarksCompleter.future;
     return result as String;
   }
@@ -454,6 +459,46 @@ class EpubController {
     await InAppWebViewController.clearAllCache();
     // Clear JavaScript memory
     await webViewController?.evaluateJavascript(source: 'clearMemoryCache()');
+  }
+
+  /// Completer for storage cleared callback
+  Completer<String>? _storageCleared;
+
+  /// Getter for the storage cleared completer
+  Completer<String>? get storageCleared => _storageCleared;
+
+  /// Clear stored reading state from localStorage
+  /// [type] can be: 'all', 'bookmarks', 'highlights', or 'current-book'
+  /// - 'all': Clears all stored data
+  /// - 'bookmarks': Clears only bookmarks
+  /// - 'highlights': Clears only highlights
+  /// - 'current-book': Clears data only for the current book
+  Future<bool> clearStorage({
+    ClearStorageType type = ClearStorageType.currentBook,
+  }) async {
+    checkEpubLoaded();
+    _storageCleared = Completer<String>();
+
+    // Reset local lists based on what's being cleared
+    if (type == ClearStorageType.all ||
+        type == ClearStorageType.bookmarks ||
+        type == ClearStorageType.currentBook) {
+      _bookmarks = [];
+    }
+
+    if (type == ClearStorageType.all ||
+        type == ClearStorageType.highlights ||
+        type == ClearStorageType.currentBook) {
+      _highlights = [];
+    }
+
+    final result = await webViewController?.evaluateJavascript(
+        source: 'clearStorage("${type.value}")');
+
+    // Wait for the storage cleared callback
+    await _storageCleared?.future;
+
+    return result == true;
   }
 
   /// Prefetch content for smoother reading

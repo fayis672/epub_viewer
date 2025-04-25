@@ -63,12 +63,6 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
   Widget _buildChapterTile(EpubChapter chapter, bool isNested) {
     final isActive = chapter.href == currentChapterHref;
 
-    // Debug output to help diagnose highlighting issues
-    debugPrint('Building tile for chapter: ${chapter.title}');
-    debugPrint('Chapter href: ${chapter.href}');
-    debugPrint('Current chapter href: $currentChapterHref');
-    debugPrint('Is active: $isActive');
-
     return Padding(
       padding: EdgeInsets.only(left: isNested ? 16.0 : 0.0),
       child: Column(
@@ -144,13 +138,9 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
   String? findChapterForCfi(String cfi) {
     if (allChapters.isEmpty) return null;
 
-    // Print the CFI for debugging
-    debugPrint('Finding chapter for CFI: $cfi');
-
     // First, try exact matches
     for (final chapter in allChapters) {
       if (chapter.href == cfi) {
-        debugPrint('Found exact match: ${chapter.href}');
         return chapter.href;
       }
     }
@@ -168,12 +158,6 @@ class _ChapterDrawerState extends State<ChapterDrawer> {
           bestMatchLength = chapter.href.length;
         }
       }
-    }
-
-    if (bestMatch != null) {
-      debugPrint('Found partial match: $bestMatch');
-    } else {
-      debugPrint('No matching chapter found for CFI: $cfi');
     }
 
     return bestMatch;
