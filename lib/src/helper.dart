@@ -453,6 +453,8 @@ class EpubHighlight {
 /// Represents book metadata
 @JsonSerializable(explicitToJson: true)
 class EpubMetadata {
+  final String? identifier;
+
   /// The title of the book
   final String? title;
 
@@ -478,6 +480,7 @@ class EpubMetadata {
   final String? description;
 
   EpubMetadata({
+    this.identifier,
     this.title,
     this.creator,
     this.publisher,

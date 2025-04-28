@@ -427,6 +427,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               : ListView(
                   shrinkWrap: true,
                   children: [
+                    _metadataItem('Identifier', metadata!.identifier),
                     _metadataItem('Title', metadata!.title),
                     _metadataItem('Creator', metadata!.creator),
                     _metadataItem('Publisher', metadata!.publisher),

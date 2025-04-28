@@ -130,6 +130,7 @@ Map<String, dynamic> _$EpubBookmarkToJson(EpubBookmark instance) =>
     };
 
 EpubMetadata _$EpubMetadataFromJson(Map<String, dynamic> json) => EpubMetadata(
+      identifier: json['identifier'] as String?,
       title: json['title'] as String?,
       creator: json['creator'] as String?,
       publisher: json['publisher'] as String?,
@@ -142,6 +143,7 @@ EpubMetadata _$EpubMetadataFromJson(Map<String, dynamic> json) => EpubMetadata(
 
 Map<String, dynamic> _$EpubMetadataToJson(EpubMetadata instance) =>
     <String, dynamic>{
+      'identifier': instance.identifier,
       'title': instance.title,
       'creator': instance.creator,
       'publisher': instance.publisher,
