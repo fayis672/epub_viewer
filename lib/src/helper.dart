@@ -390,13 +390,9 @@ class EpubBookmark {
   /// The title or description of the bookmark
   final String title;
 
-  /// The timestamp when the bookmark was created
-  final String created;
-
   EpubBookmark({
     required this.cfi,
     required this.title,
-    required this.created,
   });
 
   factory EpubBookmark.fromJson(Map<String, dynamic> json) =>
@@ -418,15 +414,11 @@ class EpubHighlight {
   /// The opacity of the highlight
   final double opacity;
 
-  /// The timestamp when the highlight was created
-  final String created;
-
   EpubHighlight({
     required this.cfi,
     required this.text,
     required this.color,
     required this.opacity,
-    required this.created,
   });
 
   factory EpubHighlight.fromJson(Map<String, dynamic> json) {
@@ -435,7 +427,6 @@ class EpubHighlight {
       text: json['text'] as String,
       color: json['color'] as String,
       opacity: double.parse(json['opacity']),
-      created: json['created'] as String,
     );
   }
 
@@ -445,7 +436,6 @@ class EpubHighlight {
       'text': text,
       'color': color,
       'opacity': opacity.toString(),
-      'created': created,
     };
   }
 }

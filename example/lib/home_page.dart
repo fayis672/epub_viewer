@@ -283,9 +283,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             cfi: textSelectionCfi,
                             color: Colors.yellow.toHex(),
                             opacity: 0.3,
-                            created: DateTime.now()
-                                .millisecondsSinceEpoch
-                                .toString(),
                             text: textSelection,
                           );
 
@@ -386,7 +383,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     final bookmark = bookmarks[index];
                     return ListTile(
                       title: Text(bookmark.title),
-                      subtitle: Text('Added: ${_formatDate(bookmark.created)}'),
+                      subtitle: Text(bookmark.cfi),
                       onTap: () {
                         // Go to bookmark
                         epubController.goTo(cfi: bookmark.cfi);
@@ -539,8 +536,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     final highlight = highlights[index];
                     return ListTile(
                       title: Text(highlight.text),
-                      subtitle:
-                          Text('Added: ${_formatDate(highlight.created)}'),
+                      subtitle: Text(highlight.cfi),
                       leading: Container(
                         width: 24,
                         height: 24,

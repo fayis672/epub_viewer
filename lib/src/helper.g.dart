@@ -119,14 +119,12 @@ Map<String, dynamic> _$EpubTextExtractResToJson(EpubTextExtractRes instance) =>
 EpubBookmark _$EpubBookmarkFromJson(Map<String, dynamic> json) => EpubBookmark(
       cfi: json['cfi'] as String,
       title: json['title'] as String,
-      created: json['created'] as String,
     );
 
 Map<String, dynamic> _$EpubBookmarkToJson(EpubBookmark instance) =>
     <String, dynamic>{
       'cfi': instance.cfi,
       'title': instance.title,
-      'created': instance.created,
     };
 
 EpubMetadata _$EpubMetadataFromJson(Map<String, dynamic> json) => EpubMetadata(
