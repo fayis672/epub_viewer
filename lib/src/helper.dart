@@ -342,19 +342,25 @@ class EpubTheme {
   });
 
   /// Uses dark theme, black background and white foreground color
-  factory EpubTheme.dark() {
+  factory EpubTheme.dark({
+    Color? backgroundColor,
+    Color? foregroundColor,
+  }) {
     return EpubTheme._(
-      backgroundColor: const Color(0xff121212),
-      foregroundColor: Colors.white,
+      backgroundColor: backgroundColor ?? Colors.black,
+      foregroundColor: foregroundColor ?? Colors.white,
       themeType: EpubThemeType.dark,
     );
   }
 
   /// Uses light theme, white background and black foreground color
-  factory EpubTheme.light() {
+  factory EpubTheme.light({
+    Color? backgroundColor,
+    Color? foregroundColor,
+  }) {
     return EpubTheme._(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+      backgroundColor: backgroundColor ?? Colors.white,
+      foregroundColor: foregroundColor ?? Colors.black,
       themeType: EpubThemeType.light,
     );
   }

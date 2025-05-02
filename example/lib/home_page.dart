@@ -33,8 +33,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   List<EpubBookmark> bookmarks = [];
   List<EpubHighlight> highlights = [];
   EpubMetadata? metadata;
-  List<String> availableThemes = ['light', 'dark', 'sepia'];
-  String currentTheme = 'light';
+  EpubThemeType currentTheme = EpubThemeType.light;
 
   @override
   void initState() {
@@ -273,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     flow: EpubFlow.paginated,
                     useSnapAnimationAndroid: false,
                     snap: true,
-                    theme: EpubTheme.light(),
+                    theme: getTheme(currentTheme),
                     allowScriptedContent: true,
                   ),
                   selectionContextMenu: ContextMenu(
@@ -461,15 +460,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           width: double.maxFinite,
           child: ListView.builder(
             shrinkWrap: true,
-            itemCount: availableThemes.length,
+            itemCount: EpubThemeType.values.length,
             itemBuilder: (context, index) {
-              final theme = availableThemes[index];
+              final theme = EpubThemeType.values[index];
               return ListTile(
-                title: Text(theme[0].toUpperCase() + theme.substring(1)),
+                title:
+                    Text(theme.name[0].toUpperCase() + theme.name.substring(1)),
                 selected: theme == currentTheme,
                 onTap: () {
                   // Apply theme
-                  epubController.selectTheme(name: theme);
+                  epubController.applySettings(theme: getTheme(theme));
                   setState(() {
                     currentTheme = theme;
                   });
@@ -487,6 +487,20 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         ],
       ),
     );
+  }
+
+  EpubTheme getTheme(EpubThemeType type) {
+    switch (type) {
+      case EpubThemeType.dark:
+        return EpubTheme.dark();
+      case EpubThemeType.light:
+        return EpubTheme.light();
+      case EpubThemeType.custom:
+        return EpubTheme.custom(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+        );
+    }
   }
 
   // Helper for metadata display
