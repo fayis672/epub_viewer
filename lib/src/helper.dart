@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 import 'package:json_annotation/json_annotation.dart';
 part 'helper.g.dart';
@@ -211,22 +212,65 @@ class FileEpubLoader implements EpubDataLoader {
 class UrlEpubLoader implements EpubDataLoader {
   final String url;
   final Map<String, String>? headers;
+  final bool isCachedToLocal;
 
-  UrlEpubLoader(this.url, {this.headers});
+  UrlEpubLoader(
+    this.url, {
+    this.headers,
+    this.isCachedToLocal = false,
+  });
 
   @override
   Future<Uint8List> loadData() async {
     try {
-      final response = await http.get(Uri.parse(url), headers: headers);
+      if (isCachedToLocal) {
+        // Get the application documents directory
+        final appDocDir = await getApplicationDocumentsDirectory();
+        final fileName = _getFileNameFromUrl(url);
+        final filePath = '${appDocDir.path}/$fileName';
+        final file = File(filePath);
 
-      if (response.statusCode == 200) {
-        return response.bodyBytes;
+        // Check if the file already exists in the cache
+        if (await file.exists()) {
+          return await file.readAsBytes();
+        } else {
+          // Download the file
+          final response = await http.get(Uri.parse(url), headers: headers);
+
+          if (response.statusCode == 200) {
+            // Save the file to the local cache
+            await file.writeAsBytes(response.bodyBytes);
+            return response.bodyBytes;
+          } else {
+            throw Exception('Failed to download file from URL');
+          }
+        }
       } else {
-        throw Exception('Failed to download file from URL');
+        final response = await http.get(Uri.parse(url), headers: headers);
+
+        if (response.statusCode == 200) {
+          return response.bodyBytes;
+        } else {
+          throw Exception('Failed to download file from URL');
+        }
       }
     } catch (e) {
       throw Exception('Failed to download file from URL, $e');
     }
+  }
+
+  /// Extracts a filename from the URL
+  String _getFileNameFromUrl(String url) {
+    Uri uri = Uri.parse(url);
+    String path = uri.path;
+    String fileName = path.split('/').last;
+
+    // If the URL doesn't have a filename, generate a hash-based filename
+    if (fileName.isEmpty) {
+      fileName = 'epub_${url.hashCode.toString()}.epub';
+    }
+
+    return fileName;
   }
 }
 
@@ -257,8 +301,13 @@ class EpubSource {
   }
 
   ///load from a url with optional headers
-  factory EpubSource.fromUrl(String url, {Map<String, String>? headers}) {
-    final loader = UrlEpubLoader(url, headers: headers);
+  factory EpubSource.fromUrl(
+    String url, {
+    Map<String, String>? headers,
+    bool isCachedToLocal = false,
+  }) {
+    final loader =
+        UrlEpubLoader(url, headers: headers, isCachedToLocal: isCachedToLocal);
     return EpubSource._(epubData: loader.loadData());
   }
 

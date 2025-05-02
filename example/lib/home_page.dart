@@ -264,7 +264,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             child: Stack(
               children: [
                 EpubViewer(
-                  epubSource: EpubSource.fromUrl(widget.url),
+                  epubSource: EpubSource.fromUrl(
+                    widget.url,
+                    isCachedToLocal: true,
+                  ),
                   epubController: epubController,
                   displaySettings: EpubDisplaySettings(
                     flow: EpubFlow.paginated,

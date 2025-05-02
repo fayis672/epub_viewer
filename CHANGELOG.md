@@ -3,6 +3,7 @@
 - Fixed font size adjust issues
 - Added change theme function
 - Added navigation to first and last pages
+- Added isCachedToLocal parameter to UrlEpubLoader
 
 ## 1.2.0
 - Added Epub Theme with background and foreground color
