@@ -84,7 +84,6 @@ class _EpubViewerState extends State<EpubViewer> with WidgetsBindingObserver {
   var selectedText = '';
 
   InAppWebViewController? webViewController;
-  bool _isLoading = true;
   Timer? _scrollDebounce;
 
   InAppWebViewSettings settings = InAppWebViewSettings(
@@ -322,86 +321,65 @@ class _EpubViewerState extends State<EpubViewer> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        InAppWebView(
-          contextMenu: widget.selectionContextMenu,
-          key: webViewKey,
-          initialFile:
-              'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-          initialSettings: settings
-            ..disableVerticalScroll = widget.displaySettings?.snap ?? false
-            ..disableHorizontalScroll =
-                widget.displaySettings?.flow == EpubFlow.scrolled,
-          onWebViewCreated: (controller) async {
-            webViewController = controller;
-            widget.epubController.setWebViewController(controller);
-            addJavaScriptHandlers();
-          },
-          onLoadStart: (controller, url) {},
-          onPermissionRequest: (controller, request) async {
-            return PermissionResponse(
-                resources: request.resources,
-                action: PermissionResponseAction.GRANT);
-          },
-          shouldOverrideUrlLoading: (controller, navigationAction) async {
-            var uri = navigationAction.request.url!;
+    return InAppWebView(
+      contextMenu: widget.selectionContextMenu,
+      key: webViewKey,
+      initialFile:
+          'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+      initialSettings: settings
+        ..disableVerticalScroll = widget.displaySettings?.snap ?? false
+        ..disableHorizontalScroll =
+            widget.displaySettings?.flow == EpubFlow.scrolled,
+      onWebViewCreated: (controller) async {
+        webViewController = controller;
+        widget.epubController.setWebViewController(controller);
+        addJavaScriptHandlers();
+      },
+      onLoadStart: (controller, url) {},
+      onPermissionRequest: (controller, request) async {
+        return PermissionResponse(
+            resources: request.resources,
+            action: PermissionResponseAction.GRANT);
+      },
+      shouldOverrideUrlLoading: (controller, navigationAction) async {
+        var uri = navigationAction.request.url!;
 
-            if (![
-              "http",
-              "https",
-              "file",
-              "chrome",
-              "data",
-              "javascript",
-              "about"
-            ].contains(uri.scheme)) {
-              // if (await canLaunchUrl(uri)) {
-              //   // Launch the App
-              //   await launchUrl(
-              //     uri,
-              //   );
-              //   // and cancel the request
-              //   return NavigationActionPolicy.CANCEL;
-              // }
-            }
+        if (!["http", "https", "file", "chrome", "data", "javascript", "about"]
+            .contains(uri.scheme)) {
+          // if (await canLaunchUrl(uri)) {
+          //   // Launch the App
+          //   await launchUrl(
+          //     uri,
+          //   );
+          //   // and cancel the request
+          //   return NavigationActionPolicy.CANCEL;
+          // }
+        }
 
-            return NavigationActionPolicy.ALLOW;
-          },
-          onLoadStop: (controller, url) async {},
-          onReceivedError: (controller, request, error) {},
-          onProgressChanged: (controller, progress) {
-            setState(() {
-              _isLoading = progress < 100;
-            });
-          },
-          onUpdateVisitedHistory: (controller, url, androidIsReload) {},
-          onConsoleMessage: (controller, consoleMessage) {
-            if (kDebugMode) {
-              debugPrint("JS_LOG: ${consoleMessage.message}");
-              // debugPrint(consoleMessage.message);
+        return NavigationActionPolicy.ALLOW;
+      },
+      onLoadStop: (controller, url) async {},
+      onReceivedError: (controller, request, error) {},
+      onUpdateVisitedHistory: (controller, url, androidIsReload) {},
+      onConsoleMessage: (controller, consoleMessage) {
+        if (kDebugMode) {
+          debugPrint("EpubViewer: ${consoleMessage.message}");
+        }
+      },
+      gestureRecognizers: {
+        Factory<VerticalDragGestureRecognizer>(
+          () => VerticalDragGestureRecognizer()
+            ..onStart = (details) {
+              debugPrint("onStart: $details");
             }
-          },
-          gestureRecognizers: {
-            Factory<VerticalDragGestureRecognizer>(
-              () => VerticalDragGestureRecognizer()
-                ..onStart = (details) {
-                  // debugPrint("onStart");
-                }
-                ..onUpdate = (details) {
-                  // debugPrint("onUpdate");
-                }
-                ..onEnd = (details) {
-                  // debugPrint("onEnd");
-                },
-            ),
-          },
+            ..onUpdate = (details) {
+              debugPrint("onUpdate: $details");
+            }
+            ..onEnd = (details) {
+              debugPrint("onEnd: $details");
+            },
         ),
-        if (_isLoading)
-          const Center(
-            child: CircularProgressIndicator(),
-          ),
-      ],
+      },
     );
   }
 
