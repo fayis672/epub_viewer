@@ -18,20 +18,20 @@ class EpubController {
 
   ///List of highlights
   List<EpubHighlight> _highlights = [];
-  
+
   ///List of underlines
   List<EpubUnderline> _underlines = [];
 
   /// Completer for highlights updated callback
   Completer<List<EpubHighlight>>? _highlightsCompleter;
-  
+
   /// Completer for underlines updated callback
   Completer<List<EpubUnderline>>? _underlinesCompleter;
 
   /// Getter for the highlights completer
   Completer<List<EpubHighlight>>? get highlightsCompleter =>
       _highlightsCompleter;
-      
+
   /// Getter for the underlines completer
   Completer<List<EpubUnderline>>? get underlinesCompleter =>
       _underlinesCompleter;
@@ -149,7 +149,7 @@ class EpubController {
     await _underlinesCompleter?.future;
     return result as String;
   }
-  
+
   ///Adds an underline to the current selection
   Future<String?> addUnderlineToSelection({
     String color = '#0000ff',
@@ -298,11 +298,11 @@ class EpubController {
 
   /// Get page number from CFI
   /// Returns -1 if page list is not available
-  Future<int> pageFromCfi(String cfi) async {
+  Future<double> pageFromCfi(String cfi) async {
     checkEpubLoaded();
     final result = await webViewController?.evaluateJavascript(
         source: 'pageFromCfi("$cfi")');
-    return result != null ? int.parse(result.toString()) : -1;
+    return result ?? 0;
   }
 
   /// Get CFI from page number
@@ -316,13 +316,13 @@ class EpubController {
 
   /// Get page number from percentage (0.0 to 1.0)
   /// Returns -1 if page list is not available
-  Future<int> pageFromPercentage(double percentage) async {
+  Future<double> pageFromPercentage(double percentage) async {
     assert(percentage >= 0.0 && percentage <= 1.0,
         'Percentage must be between 0.0 and 1.0');
     checkEpubLoaded();
     final result = await webViewController?.evaluateJavascript(
         source: 'pageFromPercentage($percentage)');
-    return result != null ? int.parse(result.toString()) : -1;
+    return result ?? 0;
   }
 
   /// Get percentage (0.0 to 1.0) from page number
@@ -459,7 +459,7 @@ class EpubController {
     }
     return _highlights;
   }
-  
+
   /// Get all underlines
   Future<List<EpubUnderline>> getUnderlines() async {
     checkEpubLoaded();
