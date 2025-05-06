@@ -302,11 +302,7 @@ class EpubController {
     checkEpubLoaded();
     final result = await webViewController?.evaluateJavascript(
         source: 'pageFromCfi("$cfi")');
-    if (result is double) {
-      return result;
-    } else {
-      return double.tryParse(result) ?? 0;
-    }
+    return double.tryParse(result) ?? 0;
   }
 
   /// Get CFI from page number
@@ -326,11 +322,7 @@ class EpubController {
     checkEpubLoaded();
     final result = await webViewController?.evaluateJavascript(
         source: 'pageFromPercentage($percentage)');
-    if (result is double) {
-      return result;
-    } else {
-      return double.tryParse(result) ?? 0;
-    }
+    return double.tryParse(result) ?? 0;
   }
 
   /// Get percentage (0.0 to 1.0) from page number
@@ -339,11 +331,7 @@ class EpubController {
     checkEpubLoaded();
     final result = await webViewController?.evaluateJavascript(
         source: 'percentageFromPage($page)');
-    if (result is double) {
-      return result;
-    } else {
-      return double.tryParse(result) ?? 0;
-    }
+    return double.tryParse(result) ?? 0;
   }
 
   /// Get percentage (0.0 to 1.0) from CFI
@@ -352,11 +340,7 @@ class EpubController {
     checkEpubLoaded();
     final result = await webViewController?.evaluateJavascript(
         source: 'percentageFromCfi("$cfi")');
-    if (result is double) {
-      return result;
-    } else {
-      return double.tryParse(result) ?? 0;
-    }
+    return double.tryParse(result) ?? 0;
   }
 
   /// Get the current font size
