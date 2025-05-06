@@ -36,9 +36,9 @@ Map<String, dynamic> _$EpubSearchResultToJson(EpubSearchResult instance) =>
     };
 
 EpubLocation _$EpubLocationFromJson(Map<String, dynamic> json) => EpubLocation(
-      startCfi: json['startCfi'] as String,
-      endCfi: json['endCfi'] as String,
-      progress: (json['progress'] as num).toDouble(),
+      startCfi: json['startCfi'] as String?,
+      endCfi: json['endCfi'] as String?,
+      progress: (json['progress'] as num?)?.toDouble() ?? 0,
     );
 
 Map<String, dynamic> _$EpubLocationToJson(EpubLocation instance) =>
@@ -54,14 +54,18 @@ EpubDisplaySettings _$EpubDisplaySettingsFromJson(Map<String, dynamic> json) =>
       spread: $enumDecodeNullable(_$EpubSpreadEnumMap, json['spread']) ??
           EpubSpread.auto,
       flow: $enumDecodeNullable(_$EpubFlowEnumMap, json['flow']) ??
-          EpubFlow.scrolled,
+          EpubFlow.paginated,
       allowScriptedContent: json['allowScriptedContent'] as bool? ?? false,
       defaultDirection: $enumDecodeNullable(
               _$EpubDefaultDirectionEnumMap, json['defaultDirection']) ??
           EpubDefaultDirection.ltr,
-      snap: json['snap'] as bool? ?? false,
+      snap: json['snap'] as bool? ?? true,
+      useSnapAnimationAndroid:
+          json['useSnapAnimationAndroid'] as bool? ?? false,
       manager: $enumDecodeNullable(_$EpubManagerEnumMap, json['manager']) ??
           EpubManager.continuous,
+      theme: EpubDisplaySettings._themeFromJson(
+          json['theme'] as Map<String, dynamic>?),
     );
 
 Map<String, dynamic> _$EpubDisplaySettingsToJson(
@@ -75,6 +79,9 @@ Map<String, dynamic> _$EpubDisplaySettingsToJson(
       'allowScriptedContent': instance.allowScriptedContent,
       'manager': _$EpubManagerEnumMap[instance.manager]!,
       'snap': instance.snap,
+      'useSnapAnimationAndroid': instance.useSnapAnimationAndroid,
+      if (EpubDisplaySettings._themeToJson(instance.theme) case final value?)
+        'theme': value,
     };
 
 const _$EpubSpreadEnumMap = {
@@ -107,4 +114,40 @@ Map<String, dynamic> _$EpubTextExtractResToJson(EpubTextExtractRes instance) =>
     <String, dynamic>{
       'text': instance.text,
       'cfiRange': instance.cfiRange,
+    };
+
+EpubBookmark _$EpubBookmarkFromJson(Map<String, dynamic> json) => EpubBookmark(
+      cfi: json['cfi'] as String,
+      title: json['title'] as String,
+    );
+
+Map<String, dynamic> _$EpubBookmarkToJson(EpubBookmark instance) =>
+    <String, dynamic>{
+      'cfi': instance.cfi,
+      'title': instance.title,
+    };
+
+EpubMetadata _$EpubMetadataFromJson(Map<String, dynamic> json) => EpubMetadata(
+      identifier: json['identifier'] as String?,
+      title: json['title'] as String?,
+      creator: json['creator'] as String?,
+      publisher: json['publisher'] as String?,
+      language: json['language'] as String?,
+      pubdate: json['pubdate'] as String?,
+      modifiedDate: json['modifiedDate'] as String?,
+      rights: json['rights'] as String?,
+      description: json['description'] as String?,
+    );
+
+Map<String, dynamic> _$EpubMetadataToJson(EpubMetadata instance) =>
+    <String, dynamic>{
+      'identifier': instance.identifier,
+      'title': instance.title,
+      'creator': instance.creator,
+      'publisher': instance.publisher,
+      'language': instance.language,
+      'pubdate': instance.pubdate,
+      'modifiedDate': instance.modifiedDate,
+      'rights': instance.rights,
+      'description': instance.description,
     };
