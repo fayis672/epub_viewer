@@ -289,6 +289,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           );
 
                           epubController.addHighlight(highlight);
+                          epubController.addUnderline(EpubUnderline(
+                            cfi: textSelectionCfi,
+                            text: textSelection,
+                            color: Colors.red.toHex(),
+                            opacity: 0.7,
+                            thickness: 1,
+                          ));
                         },
                       ),
                     ],

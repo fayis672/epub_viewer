@@ -23,6 +23,7 @@ class EpubViewer extends StatefulWidget {
     this.onAnnotationClicked,
     this.onBookmarksUpdated,
     this.onHighlightsUpdated,
+    this.onUnderlinesUpdated,
     this.onMetadataLoaded,
     this.onStorageCleared,
   });
@@ -61,6 +62,9 @@ class EpubViewer extends StatefulWidget {
 
   ///Callback for when highlights are updated
   final ValueChanged<List<EpubHighlight>>? onHighlightsUpdated;
+
+  ///Callback for when underlines are updated
+  final ValueChanged<List<EpubUnderline>>? onUnderlinesUpdated;
 
   ///Callback for when metadata is loaded
   final ValueChanged<EpubMetadata>? onMetadataLoaded;
@@ -252,6 +256,20 @@ class _EpubViewerState extends State<EpubViewer> with WidgetsBindingObserver {
           if (widget.epubController.highlightsCompleter != null &&
               !widget.epubController.highlightsCompleter!.isCompleted) {
             widget.epubController.highlightsCompleter!.complete(highlights);
+          }
+        });
+
+    // Add handler for underlines updates
+    webViewController?.addJavaScriptHandler(
+        handlerName: "underlinesUpdated",
+        callback: (data) {
+          final underlines = List<EpubUnderline>.from(
+              (data[0] as List).map((e) => EpubUnderline.fromJson(e)));
+          widget.epubController.getUnderlines();
+          widget.onUnderlinesUpdated?.call(underlines);
+          if (widget.epubController.underlinesCompleter != null &&
+              !widget.epubController.underlinesCompleter!.isCompleted) {
+            widget.epubController.underlinesCompleter!.complete(underlines);
           }
         });
 

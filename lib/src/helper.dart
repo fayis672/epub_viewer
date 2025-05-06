@@ -481,7 +481,7 @@ class EpubHighlight {
       cfi: json['cfi'] as String,
       text: json['text'] as String,
       color: json['color'] as String,
-      opacity: double.parse(json['opacity']),
+      opacity: double.parse(json['opacity'].toString()),
     );
   }
 
@@ -491,6 +491,52 @@ class EpubHighlight {
       'text': text,
       'color': color,
       'opacity': opacity.toString(),
+    };
+  }
+}
+
+/// Represents an underline in the epub
+class EpubUnderline {
+  /// The CFI string of the underline location
+  final String cfi;
+
+  /// The text that is underlined
+  final String text;
+
+  /// The color of the underline
+  final String color;
+
+  /// The opacity of the underline
+  final double opacity;
+  
+  /// The thickness of the underline in pixels
+  final double thickness;
+
+  EpubUnderline({
+    required this.cfi,
+    required this.text,
+    required this.color,
+    required this.opacity,
+    required this.thickness,
+  });
+
+  factory EpubUnderline.fromJson(Map<String, dynamic> json) {
+    return EpubUnderline(
+      cfi: json['cfi'] as String,
+      text: json['text'] as String,
+      color: json['color'] as String,
+      opacity: double.parse(json['opacity'].toString()),
+      thickness: double.parse(json['thickness'].toString()),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'cfi': cfi,
+      'text': text,
+      'color': color,
+      'opacity': opacity.toString(),
+      'thickness': thickness.toString(),
     };
   }
 }

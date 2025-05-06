@@ -18,13 +18,23 @@ class EpubController {
 
   ///List of highlights
   List<EpubHighlight> _highlights = [];
+  
+  ///List of underlines
+  List<EpubUnderline> _underlines = [];
 
   /// Completer for highlights updated callback
   Completer<List<EpubHighlight>>? _highlightsCompleter;
+  
+  /// Completer for underlines updated callback
+  Completer<List<EpubUnderline>>? _underlinesCompleter;
 
   /// Getter for the highlights completer
   Completer<List<EpubHighlight>>? get highlightsCompleter =>
       _highlightsCompleter;
+      
+  /// Getter for the underlines completer
+  Completer<List<EpubUnderline>>? get underlinesCompleter =>
+      _underlinesCompleter;
 
   ///Current font size
   double _fontSize = 16.0;
@@ -125,10 +135,33 @@ class EpubController {
     return result as String;
   }
 
-  ///Adds a underline annotation
-  addUnderline({required String cfi}) {
+  ///Adds an underline to epub viewer
+  Future<String> addUnderline(EpubUnderline underline) async {
+    _underlinesCompleter = Completer<List<EpubUnderline>>();
+    final colorHex = underline.color;
+    final opacityString = underline.opacity.toString();
+    final thicknessString = underline.thickness.toString();
+    final text = underline.text;
     checkEpubLoaded();
-    webViewController?.evaluateJavascript(source: 'addUnderLine("$cfi")');
+    final result = await webViewController?.evaluateJavascript(
+        source:
+            'addUnderline("${underline.cfi}", "$colorHex", "$opacityString", "$thicknessString", "$text")');
+    await _underlinesCompleter?.future;
+    return result as String;
+  }
+  
+  ///Adds an underline to the current selection
+  Future<String?> addUnderlineToSelection({
+    String color = '#0000ff',
+    double opacity = 0.7,
+    double thickness = 1.0,
+  }) async {
+    _underlinesCompleter = Completer<List<EpubUnderline>>();
+    checkEpubLoaded();
+    final result = await webViewController?.evaluateJavascript(
+        source: 'addUnderline("$color", $opacity, $thickness)');
+    await _underlinesCompleter?.future;
+    return result as String?;
   }
 
   ///Removes a highlight from epub viewer
@@ -141,10 +174,13 @@ class EpubController {
     return result as String?;
   }
 
-  ///Removes a underline from epub viewer
-  removeUnderline({required String cfi}) {
+  ///Removes an underline from epub viewer
+  Future<void> removeUnderline(String cfi) async {
+    _underlinesCompleter = Completer<List<EpubUnderline>>();
     checkEpubLoaded();
-    webViewController?.evaluateJavascript(source: 'removeUnderLine("$cfi")');
+    await webViewController?.evaluateJavascript(
+        source: 'removeUnderline("$cfi")');
+    await _underlinesCompleter?.future;
   }
 
   ///Set [EpubSpread] value
@@ -375,6 +411,18 @@ class EpubController {
           (result as List).map((e) => EpubHighlight.fromJson(e)));
     }
     return _highlights;
+  }
+  
+  /// Get all underlines
+  Future<List<EpubUnderline>> getUnderlines() async {
+    checkEpubLoaded();
+    final result =
+        await webViewController?.evaluateJavascript(source: 'getUnderlines()');
+    if (result != null) {
+      _underlines = List<EpubUnderline>.from(
+          (result as List).map((e) => EpubUnderline.fromJson(e)));
+    }
+    return _underlines;
   }
 
   /// Go to a bookmarked location
