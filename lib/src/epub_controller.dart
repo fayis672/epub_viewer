@@ -296,6 +296,53 @@ class EpubController {
     toProgressPercentage(1.0);
   }
 
+  /// Get page number from CFI
+  /// Returns -1 if page list is not available
+  Future<int> pageFromCfi(String cfi) async {
+    checkEpubLoaded();
+    final result = await webViewController?.evaluateJavascript(
+        source: 'pageFromCfi("$cfi")');
+    return result != null ? int.parse(result.toString()) : -1;
+  }
+
+  /// Get CFI from page number
+  /// Returns null if page list is not available or page not found
+  Future<String?> cfiFromPage(int page) async {
+    checkEpubLoaded();
+    final result = await webViewController?.evaluateJavascript(
+        source: 'cfiFromPage($page)');
+    return result != null && result != -1 ? result.toString() : null;
+  }
+
+  /// Get page number from percentage (0.0 to 1.0)
+  /// Returns -1 if page list is not available
+  Future<int> pageFromPercentage(double percentage) async {
+    assert(percentage >= 0.0 && percentage <= 1.0,
+        'Percentage must be between 0.0 and 1.0');
+    checkEpubLoaded();
+    final result = await webViewController?.evaluateJavascript(
+        source: 'pageFromPercentage($percentage)');
+    return result != null ? int.parse(result.toString()) : -1;
+  }
+
+  /// Get percentage (0.0 to 1.0) from page number
+  /// Returns -1 if page list is not available
+  Future<double> percentageFromPage(int page) async {
+    checkEpubLoaded();
+    final result = await webViewController?.evaluateJavascript(
+        source: 'percentageFromPage($page)');
+    return result != null ? double.parse(result.toString()) : -1.0;
+  }
+
+  /// Get percentage (0.0 to 1.0) from CFI
+  /// Returns -1 if page list is not available
+  Future<double> percentageFromCfi(String cfi) async {
+    checkEpubLoaded();
+    final result = await webViewController?.evaluateJavascript(
+        source: 'percentageFromCfi("$cfi")');
+    return result != null ? double.parse(result.toString()) : -1.0;
+  }
+
   /// Get the current font size
   double get fontSize => _fontSize;
 
