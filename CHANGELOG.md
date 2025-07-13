@@ -1,3 +1,6 @@
+## 1.2.2
+- Added book metadata
+
 ## 1.2.1
 - Fixed book loading issues
 - Fixed font size adjust issues

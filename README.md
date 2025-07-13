@@ -87,7 +87,7 @@ final  EpubController  epubController;
 
 ///Epub source, accepts url, file or assets
 ///opf format is not tested, use with caution
-final  String  epubSource;
+final  EpubSource epubSource;
 
 ///Epub headers to load epub from network
 final  Map<String, String> headers;
@@ -185,6 +185,10 @@ epubController.toProgressPercentage(progressPercent)
 
 ///Move to the last page
  epubController.moveToLastPage();
+
+ /// get books metadata
+ /// return [EpubMetadata]
+ epubController.getMetadata();
 ```
 
 ## Known Issues
