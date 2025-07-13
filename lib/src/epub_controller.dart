@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_epub_viewer/src/epub_metadata.dart';
 import 'package:flutter_epub_viewer/src/helper.dart';
 import 'package:flutter_epub_viewer/src/utils.dart';
 import 'package:flutter/material.dart';
@@ -65,6 +66,13 @@ class EpubController {
     _chapters =
         List<EpubChapter>.from(result.map((e) => EpubChapter.fromJson(e)));
     return _chapters;
+  }
+
+  Future<EpubMetadata> getMetadata() async {
+    checkEpubLoaded();
+    final result =
+        await webViewController!.evaluateJavascript(source: 'getBookInfo()');
+    return EpubMetadata.fromJson(result);
   }
 
   Completer searchResultCompleter = Completer<List<EpubSearchResult>>();
