@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_epub_viewer/src/epub_metadata.dart';
-import 'package:flutter_epub_viewer/src/helper.dart';
+import 'package:flutter_epub_viewer/src/models/epub_display_settings.dart';
+import 'package:flutter_epub_viewer/src/models/epub_location.dart';
+import 'package:flutter_epub_viewer/src/models/epub_search_result.dart';
+import 'package:flutter_epub_viewer/src/models/epub_text_extract_res.dart';
 import 'package:flutter_epub_viewer/src/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'models/epub_chapter.dart';
+import 'models/epub_theme.dart';
 
 class EpubController {
   InAppWebViewController? webViewController;
@@ -57,16 +63,19 @@ class EpubController {
     return _chapters;
   }
 
-  ///Parsing chapters list form epub
   Future<List<EpubChapter>> parseChapters() async {
     if (_chapters.isNotEmpty) return _chapters;
+
     checkEpubLoaded();
+
     final result =
         await webViewController!.evaluateJavascript(source: 'getChapters()');
-    _chapters =
-        List<EpubChapter>.from(result.map((e) => EpubChapter.fromJson(e)));
+
+    _chapters = parseChapterList(result);
     return _chapters;
   }
+
+  
 
   Future<EpubMetadata> getMetadata() async {
     checkEpubLoaded();
