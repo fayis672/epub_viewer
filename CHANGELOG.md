@@ -1,3 +1,6 @@
+## 1.2.3
+- iOS chapter parsing fixes
+
 ## 1.2.2
 - Added book metadata
 
