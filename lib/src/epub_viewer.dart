@@ -149,6 +149,7 @@ class _EpubViewerState extends State<EpubViewer> {
     String cfi = widget.initialCfi ?? "";
     String direction =
         widget.displaySettings?.defaultDirection.name ?? EpubDefaultDirection.ltr.name;
+    int fontSize = displaySettings.fontSize;
 
     bool useCustomSwipe =
         Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
@@ -158,7 +159,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor")',
+          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor", "$fontSize")',
     );
   }
 
