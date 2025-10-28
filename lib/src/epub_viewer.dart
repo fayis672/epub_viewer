@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_epub_viewer/src/epub_controller.dart';
@@ -186,9 +187,23 @@ class _EpubViewerState extends State<EpubViewer> {
     String? foregroundColor =
         widget.displaySettings?.theme?.foregroundColor?.toHex();
 
+    final props = {
+      "data": data,
+      "cfi": cfi,
+      "manager": manager,
+      "flow": flow,
+      "spread": spread,
+      "snap": snap,
+      "allowScripted": allowScripted,
+      "direction": direction,
+      "useCustomSwipe": useCustomSwipe,
+      "backgroundColor": backgroundColor,
+      "foregroundColor": foregroundColor,
+    };
+
     webViewController?.evaluateJavascript(
-        source:
-            'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor")');
+      source: 'loadBook(${jsonEncode(props)})',
+    );
   }
 
   @override
