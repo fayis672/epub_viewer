@@ -21,6 +21,7 @@ class EpubViewer extends StatefulWidget {
     this.displaySettings,
     this.selectionContextMenu,
     this.onAnnotationClicked,
+    this.backgroundDecoration
   });
 
   final EpubController epubController;
@@ -33,6 +34,7 @@ class EpubViewer extends StatefulWidget {
   final EpubDisplaySettings? displaySettings;
   final ValueChanged<String>? onAnnotationClicked;
   final ContextMenu? selectionContextMenu;
+  final Decoration? backgroundDecoration;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
@@ -165,47 +167,50 @@ class _EpubViewerState extends State<EpubViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return InAppWebView(
-      contextMenu: widget.selectionContextMenu,
-      key: webViewKey,
-      initialFile:
-          'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-      initialSettings: settings
-        ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
-      onWebViewCreated: (controller) async {
-        webViewController = controller;
-        widget.epubController.setWebViewController(controller);
-        addJavaScriptHandlers();
-      },
-      onLoadStart: (controller, url) {},
-      onPermissionRequest: (controller, request) async {
-        return PermissionResponse(
-          resources: request.resources,
-          action: PermissionResponseAction.GRANT,
-        );
-      },
-      shouldOverrideUrlLoading: (controller, navigationAction) async {
-        return NavigationActionPolicy.ALLOW;
-      },
-      onLoadStop: (controller, url) async {},
-      onReceivedError: (controller, request, error) {},
-      onProgressChanged: (controller, progress) {},
-      onUpdateVisitedHistory: (controller, url, androidIsReload) {},
-      onConsoleMessage: (controller, consoleMessage) {
-        if (kDebugMode) {
-          debugPrint("JS_LOG: ${consoleMessage.message}");
-        }
-      },
-      gestureRecognizers: {
-        Factory<VerticalDragGestureRecognizer>(
-          () => VerticalDragGestureRecognizer(),
-        ),
-        Factory<LongPressGestureRecognizer>(
-          () => LongPressGestureRecognizer(
-            duration: const Duration(milliseconds: 30),
+    return Container(
+      decoration: widget.backgroundDecoration,
+      child: InAppWebView(
+        contextMenu: widget.selectionContextMenu,
+        key: webViewKey,
+        initialFile:
+            'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+        initialSettings: settings
+          ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
+        onWebViewCreated: (controller) async {
+          webViewController = controller;
+          widget.epubController.setWebViewController(controller);
+          addJavaScriptHandlers();
+        },
+        onLoadStart: (controller, url) {},
+        onPermissionRequest: (controller, request) async {
+          return PermissionResponse(
+            resources: request.resources,
+            action: PermissionResponseAction.GRANT,
+          );
+        },
+        shouldOverrideUrlLoading: (controller, navigationAction) async {
+          return NavigationActionPolicy.ALLOW;
+        },
+        onLoadStop: (controller, url) async {},
+        onReceivedError: (controller, request, error) {},
+        onProgressChanged: (controller, progress) {},
+        onUpdateVisitedHistory: (controller, url, androidIsReload) {},
+        onConsoleMessage: (controller, consoleMessage) {
+          if (kDebugMode) {
+            debugPrint("JS_LOG: ${consoleMessage.message}");
+          }
+        },
+        gestureRecognizers: {
+          Factory<VerticalDragGestureRecognizer>(
+            () => VerticalDragGestureRecognizer(),
           ),
-        ),
-      },
+          Factory<LongPressGestureRecognizer>(
+            () => LongPressGestureRecognizer(
+              duration: const Duration(milliseconds: 30),
+            ),
+          ),
+        },
+      ),
     );
   }
 
