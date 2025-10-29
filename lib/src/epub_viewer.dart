@@ -21,7 +21,6 @@ class EpubViewer extends StatefulWidget {
     this.displaySettings,
     this.selectionContextMenu,
     this.onAnnotationClicked,
-    this.backgroundDecoration
   });
 
   final EpubController epubController;
@@ -34,7 +33,6 @@ class EpubViewer extends StatefulWidget {
   final EpubDisplaySettings? displaySettings;
   final ValueChanged<String>? onAnnotationClicked;
   final ContextMenu? selectionContextMenu;
-  final Decoration? backgroundDecoration;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
@@ -156,19 +154,18 @@ class _EpubViewerState extends State<EpubViewer> {
     bool useCustomSwipe =
         Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
-    String? backgroundColor = widget.displaySettings?.theme?.backgroundColor?.toHex();
     String? foregroundColor = widget.displaySettings?.theme?.foregroundColor?.toHex();
 
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor", "$fontSize")',
+          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "", "$foregroundColor", "$fontSize")',
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: widget.backgroundDecoration,
+      decoration: widget.displaySettings?.theme?.backgroundDecoration,
       child: InAppWebView(
         contextMenu: widget.selectionContextMenu,
         key: webViewKey,
