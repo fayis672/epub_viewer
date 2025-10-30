@@ -158,7 +158,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "", "$foregroundColor", "$fontSize")',
+          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize")',
     );
   }
 
