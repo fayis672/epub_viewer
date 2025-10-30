@@ -7,8 +7,8 @@ part of 'epub_theme.dart';
 // **************************************************************************
 
 EpubTheme _$EpubThemeFromJson(Map<String, dynamic> json) => EpubTheme(
-  backgroundColor: const ColorConverter().fromJson(
-    json['backgroundColor'] as String?,
+  backgroundDecoration: EpubTheme._decorationFromJson(
+    json['backgroundDecoration'] as Map<String, dynamic>,
   ),
   foregroundColor: const ColorConverter().fromJson(
     json['foregroundColor'] as String?,
@@ -17,7 +17,9 @@ EpubTheme _$EpubThemeFromJson(Map<String, dynamic> json) => EpubTheme(
 );
 
 Map<String, dynamic> _$EpubThemeToJson(EpubTheme instance) => <String, dynamic>{
-  'backgroundColor': const ColorConverter().toJson(instance.backgroundColor),
+  'backgroundDecoration': EpubTheme._decorationToJson(
+    instance.backgroundDecoration,
+  ),
   'foregroundColor': const ColorConverter().toJson(instance.foregroundColor),
   'themeType': _$EpubThemeTypeEnumMap[instance.themeType]!,
 };
