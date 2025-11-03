@@ -154,58 +154,60 @@ class _EpubViewerState extends State<EpubViewer> {
     bool useCustomSwipe =
         Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
-    String? backgroundColor = widget.displaySettings?.theme?.backgroundColor?.toHex();
     String? foregroundColor = widget.displaySettings?.theme?.foregroundColor?.toHex();
 
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "$backgroundColor", "$foregroundColor", "$fontSize")',
+          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize")',
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return InAppWebView(
-      contextMenu: widget.selectionContextMenu,
-      key: webViewKey,
-      initialFile:
-          'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-      initialSettings: settings
-        ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
-      onWebViewCreated: (controller) async {
-        webViewController = controller;
-        widget.epubController.setWebViewController(controller);
-        addJavaScriptHandlers();
-      },
-      onLoadStart: (controller, url) {},
-      onPermissionRequest: (controller, request) async {
-        return PermissionResponse(
-          resources: request.resources,
-          action: PermissionResponseAction.GRANT,
-        );
-      },
-      shouldOverrideUrlLoading: (controller, navigationAction) async {
-        return NavigationActionPolicy.ALLOW;
-      },
-      onLoadStop: (controller, url) async {},
-      onReceivedError: (controller, request, error) {},
-      onProgressChanged: (controller, progress) {},
-      onUpdateVisitedHistory: (controller, url, androidIsReload) {},
-      onConsoleMessage: (controller, consoleMessage) {
-        if (kDebugMode) {
-          debugPrint("JS_LOG: ${consoleMessage.message}");
-        }
-      },
-      gestureRecognizers: {
-        Factory<VerticalDragGestureRecognizer>(
-          () => VerticalDragGestureRecognizer(),
-        ),
-        Factory<LongPressGestureRecognizer>(
-          () => LongPressGestureRecognizer(
-            duration: const Duration(milliseconds: 30),
+    return Container(
+      decoration: widget.displaySettings?.theme?.backgroundDecoration,
+      child: InAppWebView(
+        contextMenu: widget.selectionContextMenu,
+        key: webViewKey,
+        initialFile:
+            'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+        initialSettings: settings
+          ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
+        onWebViewCreated: (controller) async {
+          webViewController = controller;
+          widget.epubController.setWebViewController(controller);
+          addJavaScriptHandlers();
+        },
+        onLoadStart: (controller, url) {},
+        onPermissionRequest: (controller, request) async {
+          return PermissionResponse(
+            resources: request.resources,
+            action: PermissionResponseAction.GRANT,
+          );
+        },
+        shouldOverrideUrlLoading: (controller, navigationAction) async {
+          return NavigationActionPolicy.ALLOW;
+        },
+        onLoadStop: (controller, url) async {},
+        onReceivedError: (controller, request, error) {},
+        onProgressChanged: (controller, progress) {},
+        onUpdateVisitedHistory: (controller, url, androidIsReload) {},
+        onConsoleMessage: (controller, consoleMessage) {
+          if (kDebugMode) {
+            debugPrint("JS_LOG: ${consoleMessage.message}");
+          }
+        },
+        gestureRecognizers: {
+          Factory<VerticalDragGestureRecognizer>(
+            () => VerticalDragGestureRecognizer(),
           ),
-        ),
-      },
+          Factory<LongPressGestureRecognizer>(
+            () => LongPressGestureRecognizer(
+              duration: const Duration(milliseconds: 30),
+            ),
+          ),
+        },
+      ),
     );
   }
 

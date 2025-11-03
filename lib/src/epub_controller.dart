@@ -171,10 +171,9 @@ class EpubController {
   }
 
   updateTheme({required EpubTheme theme}) async {
-    String? backgroundColor = theme.backgroundColor?.toHex();
     String? foregroundColor = theme.foregroundColor?.toHex();
     await webViewController?.evaluateJavascript(
-        source: 'updateTheme("$backgroundColor","$foregroundColor")');
+        source: 'updateTheme("","$foregroundColor")');
   }
 
   Completer<EpubTextExtractRes> pageTextCompleter =
