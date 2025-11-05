@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter_epub_viewer/srcs/models/epub_data_loader.dart';
+import 'package:flutter_epub_viewer/src/epub_data_loader.dart';
 
 
 /// Epub file source

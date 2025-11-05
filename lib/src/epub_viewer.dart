@@ -16,6 +16,7 @@ class EpubViewer extends StatefulWidget {
     this.initialCfi,
     this.onChaptersLoaded,
     this.onEpubLoaded,
+    this.onLocationLoaded,
     this.onRelocated,
     this.onTextSelected,
     this.displaySettings,
@@ -23,15 +24,40 @@ class EpubViewer extends StatefulWidget {
     this.onAnnotationClicked,
   });
 
+  //Epub controller to manage epub
   final EpubController epubController;
+
+  ///Epub source, accepts url, file or assets
+  ///opf format is not tested, use with caution
   final EpubSource epubSource;
+
+  ///Initial cfi string to  specify which part of epub to load initially
+  ///if null, the first chapter will be loaded
   final String? initialCfi;
+
+  ///Call back when epub is loaded and displayed
   final VoidCallback? onEpubLoaded;
+
+  /// Callback when the location are generated for epub, progress will be only available after this
+  final VoidCallback? onLocationLoaded;
+
+  ///Call back when chapters are loaded
   final ValueChanged<List<EpubChapter>>? onChaptersLoaded;
+
+  ///Call back when epub page changes
   final ValueChanged<EpubLocation>? onRelocated;
+
+  ///Call back when text selection changes
   final ValueChanged<EpubTextSelection>? onTextSelected;
+
+  ///initial display settings
   final EpubDisplaySettings? displaySettings;
+
+  ///Callback for handling annotation click (Highlight and Underline)
   final ValueChanged<String>? onAnnotationClicked;
+
+  ///context menu for text selection
+  ///if null, the default context menu will be used
   final ContextMenu? selectionContextMenu;
 
   @override
@@ -86,7 +112,10 @@ class _EpubViewerState extends State<EpubViewer> {
         var cfiString = data[0];
         var selectedText = data[1];
         widget.onTextSelected?.call(
-          EpubTextSelection(selectedText: selectedText, selectionCfi: cfiString),
+          EpubTextSelection(
+            selectedText: selectedText,
+            selectionCfi: cfiString,
+          ),
         );
       },
     );
@@ -108,6 +137,13 @@ class _EpubViewerState extends State<EpubViewer> {
       callback: (data) {
         var location = data[0];
         widget.onRelocated?.call(EpubLocation.fromJson(location));
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'locationLoaded',
+      callback: (arguments) {
+        widget.onLocationLoaded?.call();
       },
     );
 
@@ -148,13 +184,15 @@ class _EpubViewerState extends State<EpubViewer> {
     bool allowScripted = displaySettings.allowScriptedContent;
     String cfi = widget.initialCfi ?? "";
     String direction =
-        widget.displaySettings?.defaultDirection.name ?? EpubDefaultDirection.ltr.name;
+        widget.displaySettings?.defaultDirection.name ??
+        EpubDefaultDirection.ltr.name;
     int fontSize = displaySettings.fontSize;
 
     bool useCustomSwipe =
         Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
-    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor?.toHex();
+    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor
+        ?.toHex();
 
     webViewController?.evaluateJavascript(
       source:
