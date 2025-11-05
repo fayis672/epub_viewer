@@ -70,12 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => SearchPage(
-                            epubController: epubController,
-                          )));
+              epubController.setFontSize(fontSize: 35);
             },
           ),
         ],
@@ -91,6 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Stack(
               children: [
                 EpubViewer(
+                  initialCfi: 'epubcfi(/6/20!/4/2[introduction]/2[c1_h]/1:0)',
                   epubSource: EpubSource.fromUrl(
                       'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
                   epubController: epubController,
@@ -133,6 +129,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTextSelected: (epubTextSelection) {
                     textSelectionCfi = epubTextSelection.selectionCfi;
                     print(textSelectionCfi);
+                  },
+                  onLocationLoaded: () {
+                    /// progress will be available after this callback
+                    print('on location loaded');
                   },
                 ),
                 Visibility(
