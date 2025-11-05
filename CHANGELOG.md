@@ -1,3 +1,8 @@
+## 1.2.4
+- Initial progress fixes
+- Relocation on font change fixes
+- background decoration fixes
+
 ## 1.2.3
 - iOS chapter parsing fixes
 
