@@ -8,6 +8,23 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../flutter_epub_viewer.dart';
 import 'utils.dart';
 
+/// Callback for text selection events with WebView-relative coordinates.
+///
+/// Provides precise positioning information for implementing custom selection UI.
+/// All rectangles are relative to the WebView's coordinate system (not screen coordinates).
+///
+/// Parameters:
+/// * [selectedText] - The text that was selected
+/// * [cfiRange] - The EPUB CFI (Canonical Fragment Identifier) range for the selection
+/// * [selectionRect] - The bounding rectangle of the selected text (WebView-relative)
+/// * [viewRect] - The bounding rectangle of the entire WebView
+typedef EpubSelectionCallback = void Function(
+  String selectedText,
+  String cfiRange,
+  Rect selectionRect,
+  Rect viewRect,
+);
+
 class EpubViewer extends StatefulWidget {
   const EpubViewer({
     super.key,
@@ -22,6 +39,11 @@ class EpubViewer extends StatefulWidget {
     this.displaySettings,
     this.selectionContextMenu,
     this.onAnnotationClicked,
+    this.onSelection,
+    this.onSelectionChanging,
+    this.onDeselection,
+    this.suppressNativeContextMenu = false,
+    this.clearSelectionOnPageChange = true,
   });
 
   //Epub controller to manage epub
@@ -56,9 +78,62 @@ class EpubViewer extends StatefulWidget {
   ///Callback for handling annotation click (Highlight and Underline)
   final ValueChanged<String>? onAnnotationClicked;
 
-  ///context menu for text selection
-  ///if null, the default context menu will be used
+  /// Context menu for text selection.
+  /// If null, the default context menu will be used.
   final ContextMenu? selectionContextMenu;
+
+  /// Whether to suppress the native context menu entirely.
+  /// When true, no native context menu will be shown on text selection.
+  /// Use with [onSelection] to implement custom selection UI.
+  final bool suppressNativeContextMenu;
+
+  /// Callback when text is selected with WebView-relative coordinates.
+  /// 
+  /// Fires when:
+  /// * User completes initial text selection
+  /// * User finishes dragging selection handles (after a 300ms debounce)
+  /// 
+  /// Use this callback to display custom UI at the selection position.
+  /// Coordinates are relative to the WebView, not the screen.
+  /// 
+  /// See also:
+  /// * [onSelectionChanging] - Called while user is actively dragging handles
+  /// * [onDeselection] - Called when selection is cleared
+  final EpubSelectionCallback? onSelection;
+
+  /// Callback fired continuously while the user is dragging selection handles.
+  /// 
+  /// This callback helps prevent UI flicker and performance issues by allowing you to
+  /// hide custom selection UI while the user is actively adjusting the selection.
+  /// Once dragging stops, [onSelection] will be called with the final selection.
+  /// 
+  /// Typical usage:
+  /// ```dart
+  /// onSelectionChanging: () {
+  ///   // Hide custom selection UI while user drags handles
+  ///   setState(() => showSelectionMenu = false);
+  /// }
+  /// ```
+  /// 
+  /// See also:
+  /// * [onSelection] - Called when selection is finalized
+  final VoidCallback? onSelectionChanging;
+
+  /// Callback when text selection is cleared.
+  /// 
+  /// Fired when the user taps elsewhere or explicitly clears the selection.
+  /// Use this to hide any custom selection UI.
+  final VoidCallback? onDeselection;
+
+  /// Whether to automatically clear text selection when navigating to a new page.
+  /// 
+  /// When true (default), text selection will be cleared when the user navigates
+  /// to a different page using next(), previous(), or toCfi(). This is the standard
+  /// behavior in most e-reader applications.
+  /// 
+  /// Set to false if you want to preserve selection across page changes, though
+  /// note that the selection may not be visible on the new page.
+  final bool clearSelectionOnPageChange;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
@@ -90,6 +165,63 @@ class _EpubViewerState extends State<EpubViewer> {
     super.initState();
   }
 
+  void _handleSelection({
+    required Map<String, dynamic>? rect,
+    required String selectedText,
+    required String cfi,
+  }) {
+    if (!mounted) return;
+    
+    try {
+      final renderBox = context.findRenderObject() as RenderBox;
+      final webViewSize = renderBox.size;
+      
+      if (rect == null) {
+        // Still call onTextSelected for basic selection functionality
+        widget.onTextSelected?.call(
+          EpubTextSelection(
+            selectedText: selectedText,
+            selectionCfi: cfi,
+          ),
+        );
+        return;
+      }
+      
+      // Convert relative coordinates (0-1) to actual WebView coordinates
+      final left = (rect['left'] as num).toDouble();
+      final top = (rect['top'] as num).toDouble();
+      final width = (rect['width'] as num).toDouble();
+      final height = (rect['height'] as num).toDouble();
+      
+      final scaledRect = Rect.fromLTWH(
+        left * webViewSize.width,
+        top * webViewSize.height,
+        width * webViewSize.width,
+        height * webViewSize.height,
+      );
+      
+      // Create viewRect in WebView-relative coordinates
+      final viewRect = Rect.fromLTWH(
+        0,
+        0,
+        webViewSize.width,
+        webViewSize.height
+      );
+
+      // Provide WebView-relative coordinates (not screen coordinates)
+      widget.onSelection?.call(
+        selectedText,
+        cfi,
+        scaledRect,  // WebView-relative coordinates
+        viewRect,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error in _handleSelection: $e");
+      }
+    }
+  }
+
   void addJavaScriptHandlers() {
     webViewController?.addJavaScriptHandler(
       handlerName: "displayed",
@@ -109,14 +241,49 @@ class _EpubViewerState extends State<EpubViewer> {
     webViewController?.addJavaScriptHandler(
       handlerName: "selection",
       callback: (data) {
-        var cfiString = data[0];
-        var selectedText = data[1];
+        final cfiString = data[0] as String;
+        final selectedText = data[1] as String;
+        Map<String, dynamic>? rect;
+        
+        try {
+          if (data.length > 2 && data[2] != null) {
+            rect = Map<String, dynamic>.from(data[2] as Map);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Error parsing selection rect: $e');
+          }
+          rect = null;
+        }
+
+        // Always call basic text selection callback
         widget.onTextSelected?.call(
           EpubTextSelection(
             selectedText: selectedText,
             selectionCfi: cfiString,
           ),
         );
+
+        // If we have coordinates and a selection callback, provide full selection info
+        if (rect != null && widget.onSelection != null) {
+          _handleSelection(rect: rect, selectedText: selectedText, cfi: cfiString);
+        }
+      },
+    );
+
+    // Add deselection handler
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'selectionCleared',
+      callback: (args) {
+        widget.onDeselection?.call();
+      },
+    );
+
+    // Add selection changing handler (dragging handles)
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'selectionChanging',
+      callback: (args) {
+        widget.onSelectionChanging?.call();
       },
     );
 
@@ -193,10 +360,12 @@ class _EpubViewerState extends State<EpubViewer> {
 
     String? foregroundColor = widget.displaySettings?.theme?.foregroundColor
         ?.toHex();
+    
+    bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
 
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize")',
+          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange)',
     );
   }
 
@@ -205,7 +374,12 @@ class _EpubViewerState extends State<EpubViewer> {
     return Container(
       decoration: widget.displaySettings?.theme?.backgroundDecoration,
       child: InAppWebView(
-        contextMenu: widget.selectionContextMenu,
+        contextMenu: widget.suppressNativeContextMenu 
+            ? ContextMenu(
+                menuItems: [],
+                settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
+              )
+            : widget.selectionContextMenu,
         key: webViewKey,
         initialFile:
             'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
