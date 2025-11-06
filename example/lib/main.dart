@@ -134,6 +134,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     /// progress will be available after this callback
                     print('on location loaded');
                   },
+                  onSelection:
+                      (selectedText, cfiRange, selectionRect, viewRect) {
+                    print("On selection changes");
+                  },
+                  onDeselection: () {
+                    print("on delection");
+                  },
+                  onSelectionChanging: () {
+                    print("on slection chnages");
+                  },
                 ),
                 Visibility(
                   visible: isLoading,
