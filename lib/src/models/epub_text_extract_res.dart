@@ -8,10 +8,12 @@ part 'epub_text_extract_res.g.dart';
 class EpubTextExtractRes {
   String? text;
   String? cfiRange;
+  String? xpathRange;
 
   EpubTextExtractRes({
     this.text,
     this.cfiRange,
+    this.xpathRange,
   });
   factory EpubTextExtractRes.fromJson(Map<String, dynamic> json) =>
       _$EpubTextExtractResFromJson(json);

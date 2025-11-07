@@ -21,13 +21,16 @@ class EpubController {
     webViewController = controller;
   }
 
-  ///Move epub view to specific area using Cfi string or chapter href
+  ///Move epub view to specific area using Cfi string, XPath/XPointer, or chapter href
   display({
-    ///Cfi String of the desired location, also accepts chapter href
+    ///Cfi String, XPath/XPointer string, or chapter href of the desired location
+    ///If the string starts with '/', it will be treated as XPath/XPointer
     required String cfi,
   }) {
     checkEpubLoaded();
-    webViewController?.evaluateJavascript(source: 'toCfi("$cfi")');
+    // Escape quotes in the string
+    var escapedCfi = cfi.replaceAll('"', '\\"');
+    webViewController?.evaluateJavascript(source: 'toCfi("$escapedCfi")');
   }
 
   ///Moves to next page in epub view
