@@ -12,7 +12,7 @@ class EpubChapter {
   final String href;
   final String id;
 
-  /// The subchapters of the chapter
+  /// The subchapters of the chapteri
   final List<EpubChapter> subitems;
 
   EpubChapter({

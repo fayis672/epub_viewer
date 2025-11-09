@@ -2,6 +2,12 @@
 - Initial progress fixes
 - Relocation on font change fixes
 - background decoration fixes
+- Added onSelection callback with WebView-relative coordinates for custom selection UI
+- Added onSelectionChanging callback for detecting selection handle dragging
+- Added onDeselection callback for selection cleared events
+- Added clearSelectionOnPageChange property to control selection behavior on navigation
+- Fixed suppressNativeContextMenu to properly hide native context menu
+- Fixed text selection coordinate mapping for accurate positioning
 
 ## 1.2.3
 - iOS chapter parsing fixes

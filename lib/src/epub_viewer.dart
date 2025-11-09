@@ -72,6 +72,13 @@ class EpubViewer extends StatefulWidget {
   ///Call back when epub page changes
   final ValueChanged<EpubLocation>? onRelocated;
 
+  ///Callback when initial position loading starts (for showing progress indicator)
+  ///Receives the type: 'xpath' or 'cfi'
+  final ValueChanged<String>? onInitialPositionLoading;
+
+  ///Callback when initial position loading completes
+  final VoidCallback? onInitialPositionLoaded;
+
   ///Call back when text selection changes
   final ValueChanged<EpubTextSelection>? onTextSelected;
 
@@ -81,8 +88,8 @@ class EpubViewer extends StatefulWidget {
   ///Callback for handling annotation click (Highlight and Underline)
   final ValueChanged<String>? onAnnotationClicked;
 
-  ///context menu for text selection
-  ///if null, the default context menu will be used
+  /// Context menu for text selection.
+  /// If null, the default context menu will be used.
   final ContextMenu? selectionContextMenu;
 
   /// Whether to suppress the native context menu entirely.
@@ -127,13 +134,6 @@ class EpubViewer extends StatefulWidget {
   /// Fired when the user taps elsewhere or explicitly clears the selection.
   /// Use this to hide any custom selection UI.
   final VoidCallback? onDeselection;
-
-  /// Callback when initial position loading starts (for showing progress indicator)
-  /// Receives the type: 'xpath' or 'cfi'
-  final ValueChanged<String>? onInitialPositionLoading;
-
-  /// Callback when initial position loading completes
-  final VoidCallback? onInitialPositionLoaded;
 
   /// Whether to automatically clear text selection when navigating to a new page.
   ///
@@ -264,7 +264,9 @@ class _EpubViewerState extends State<EpubViewer> {
         }
 
         // Always call basic text selection callback
-        widget.onTextSelected?.call(EpubTextSelection(selectedText: selectedText, selectionCfi: cfiString));
+        widget.onTextSelected?.call(
+          EpubTextSelection(selectedText: selectedText, selectionCfi: cfiString, selectionXpath: selectionXpath),
+        );
 
         // If we have coordinates and a selection callback, provide full selection info
         if (rect != null && widget.onSelection != null) {
@@ -373,7 +375,9 @@ class _EpubViewerState extends State<EpubViewer> {
           }
           xpathRange = null;
         }
-        widget.epubController.pageTextCompleter.complete(EpubTextExtractRes(text: text, cfiRange: cfi));
+        widget.epubController.pageTextCompleter.complete(
+          EpubTextExtractRes(text: text, cfiRange: cfi, xpathRange: xpathRange),
+        );
       },
     );
   }
