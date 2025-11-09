@@ -10,9 +10,13 @@ class EpubSearchResult {
   /// The excerpt of the search result
   String excerpt;
 
+  /// The xpath/XPointer string of the search result
+  String? xpath;
+
   EpubSearchResult({
     required this.cfi,
     required this.excerpt,
+    this.xpath,
   });
   factory EpubSearchResult.fromJson(Map<String, dynamic> json) =>
       _$EpubSearchResultFromJson(json);

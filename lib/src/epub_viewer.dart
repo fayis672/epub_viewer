@@ -31,6 +31,7 @@ class EpubViewer extends StatefulWidget {
     required this.epubController,
     required this.epubSource,
     this.initialCfi,
+    this.initialXPath,
     this.onChaptersLoaded,
     this.onEpubLoaded,
     this.onLocationLoaded,
@@ -42,6 +43,8 @@ class EpubViewer extends StatefulWidget {
     this.onSelection,
     this.onSelectionChanging,
     this.onDeselection,
+    this.onInitialPositionLoading,
+    this.onInitialPositionLoaded,
     this.suppressNativeContextMenu = false,
     this.clearSelectionOnPageChange = true,
   });
@@ -57,6 +60,10 @@ class EpubViewer extends StatefulWidget {
   ///if null, the first chapter will be loaded
   final String? initialCfi;
 
+  ///Initial xpath/XPointer string to specify which part of epub to load initially
+  ///if null and initialCfi is also null, the first chapter will be loaded
+  final String? initialXPath;
+
   ///Call back when epub is loaded and displayed
   final VoidCallback? onEpubLoaded;
 
@@ -68,6 +75,13 @@ class EpubViewer extends StatefulWidget {
 
   ///Call back when epub page changes
   final ValueChanged<EpubLocation>? onRelocated;
+
+  ///Callback when initial position loading starts (for showing progress indicator)
+  ///Receives the type: 'xpath' or 'cfi'
+  final ValueChanged<String>? onInitialPositionLoading;
+
+  ///Callback when initial position loading completes
+  final VoidCallback? onInitialPositionLoaded;
 
   ///Call back when text selection changes
   final ValueChanged<EpubTextSelection>? onTextSelected;
@@ -244,6 +258,7 @@ class _EpubViewerState extends State<EpubViewer> {
         final cfiString = data[0] as String;
         final selectedText = data[1] as String;
         Map<String, dynamic>? rect;
+        String? selectionXpath;
         
         try {
           if (data.length > 2 && data[2] != null) {
@@ -256,11 +271,23 @@ class _EpubViewerState extends State<EpubViewer> {
           rect = null;
         }
 
+        try {
+          if (data.length > 3 && data[3] != null) {
+            selectionXpath = data[3] as String?;
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Error parsing selection xpath: $e');
+          }
+          selectionXpath = null;
+        }
+
         // Always call basic text selection callback
         widget.onTextSelected?.call(
           EpubTextSelection(
             selectedText: selectedText,
             selectionCfi: cfiString,
+            selectionXpath: selectionXpath,
           ),
         );
 
@@ -315,6 +342,34 @@ class _EpubViewerState extends State<EpubViewer> {
     );
 
     webViewController?.addJavaScriptHandler(
+      handlerName: 'initialPositionLoading',
+      callback: (data) {
+        String type = 'cfi';
+        if (data.isNotEmpty) {
+          try {
+            if (data[0] is Map) {
+              type = (data[0] as Map)['type'] ?? 'cfi';
+            } else if (data[0] is String) {
+              type = data[0] as String;
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('Error parsing initialPositionLoading type: $e');
+            }
+          }
+        }
+        widget.onInitialPositionLoading?.call(type);
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'initialPositionLoaded',
+      callback: (arguments) {
+        widget.onInitialPositionLoaded?.call();
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
       handlerName: "readyToLoad",
       callback: (data) {
         loadBook();
@@ -334,8 +389,19 @@ class _EpubViewerState extends State<EpubViewer> {
       callback: (data) {
         var text = data[0].trim();
         var cfi = data[1];
+        String? xpathRange;
+        try {
+          if (data.length > 2 && data[2] != null) {
+            xpathRange = data[2] as String?;
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Error parsing xpathRange: $e');
+          }
+          xpathRange = null;
+        }
         widget.epubController.pageTextCompleter.complete(
-          EpubTextExtractRes(text: text, cfiRange: cfi),
+          EpubTextExtractRes(text: text, cfiRange: cfi, xpathRange: xpathRange),
         );
       },
     );
@@ -350,6 +416,7 @@ class _EpubViewerState extends State<EpubViewer> {
     bool snap = displaySettings.snap;
     bool allowScripted = displaySettings.allowScriptedContent;
     String cfi = widget.initialCfi ?? "";
+    String? initialXPath = widget.initialXPath;
     String direction =
         widget.displaySettings?.defaultDirection.name ??
         EpubDefaultDirection.ltr.name;
@@ -363,9 +430,11 @@ class _EpubViewerState extends State<EpubViewer> {
     
     bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
 
+    String xpathParam = initialXPath != null ? '"$initialXPath"' : 'null';
+
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange)',
+          'loadBook([${data.join(',')}], "$cfi", $xpathParam, "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange)',
     );
   }
 
