@@ -144,6 +144,12 @@ class EpubController {
   //   webViewController?.evaluateJavascript(source: 'removeMark("$cfi")');
   // }
 
+  ///Clears any active text selection in the epub viewer
+  clearSelection() {
+    checkEpubLoaded();
+    webViewController?.evaluateJavascript(source: 'clearSelection()');
+  }
+
   ///Set [EpubSpread] value
   setSpread({required EpubSpread spread}) async {
     await webViewController?.evaluateJavascript(source: 'setSpread("$spread")');
