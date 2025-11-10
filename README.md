@@ -158,6 +158,9 @@ epubController.addUnderline(cfi:cfi)
 ///Remove underline annotation
 epubController.removeUnderline(cfi:cfi)
 
+///Clears any active text selection in the epub viewer
+epubController.clearSelection()
+
 ///Set [EpubSpread] value
 epubController.setSpread(spread:spread)
 

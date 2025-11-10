@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -18,12 +19,7 @@ import 'utils.dart';
 /// * [cfiRange] - The EPUB CFI (Canonical Fragment Identifier) range for the selection
 /// * [selectionRect] - The bounding rectangle of the selected text (WebView-relative)
 /// * [viewRect] - The bounding rectangle of the entire WebView
-typedef EpubSelectionCallback = void Function(
-  String selectedText,
-  String cfiRange,
-  Rect selectionRect,
-  Rect viewRect,
-);
+typedef EpubSelectionCallback = void Function(String selectedText, String cfiRange, Rect selectionRect, Rect viewRect);
 
 class EpubViewer extends StatefulWidget {
   const EpubViewer({
@@ -102,25 +98,25 @@ class EpubViewer extends StatefulWidget {
   final bool suppressNativeContextMenu;
 
   /// Callback when text is selected with WebView-relative coordinates.
-  /// 
+  ///
   /// Fires when:
   /// * User completes initial text selection
   /// * User finishes dragging selection handles (after a 300ms debounce)
-  /// 
+  ///
   /// Use this callback to display custom UI at the selection position.
   /// Coordinates are relative to the WebView, not the screen.
-  /// 
+  ///
   /// See also:
   /// * [onSelectionChanging] - Called while user is actively dragging handles
   /// * [onDeselection] - Called when selection is cleared
   final EpubSelectionCallback? onSelection;
 
   /// Callback fired continuously while the user is dragging selection handles.
-  /// 
+  ///
   /// This callback helps prevent UI flicker and performance issues by allowing you to
   /// hide custom selection UI while the user is actively adjusting the selection.
   /// Once dragging stops, [onSelection] will be called with the final selection.
-  /// 
+  ///
   /// Typical usage:
   /// ```dart
   /// onSelectionChanging: () {
@@ -128,27 +124,26 @@ class EpubViewer extends StatefulWidget {
   ///   setState(() => showSelectionMenu = false);
   /// }
   /// ```
-  /// 
+  ///
   /// See also:
   /// * [onSelection] - Called when selection is finalized
   final VoidCallback? onSelectionChanging;
 
   /// Callback when text selection is cleared.
-  /// 
+  ///
   /// Fired when the user taps elsewhere or explicitly clears the selection.
   /// Use this to hide any custom selection UI.
   final VoidCallback? onDeselection;
 
   /// Whether to automatically clear text selection when navigating to a new page.
-  /// 
+  ///
   /// When true (default), text selection will be cleared when the user navigates
   /// to a different page using next(), previous(), or toCfi(). This is the standard
   /// behavior in most e-reader applications.
-  /// 
+  ///
   /// Set to false if you want to preserve selection across page changes, though
   /// note that the selection may not be visible on the new page.
   final bool clearSelectionOnPageChange;
-
   @override
   State<EpubViewer> createState() => _EpubViewerState();
 }
@@ -179,54 +174,40 @@ class _EpubViewerState extends State<EpubViewer> {
     super.initState();
   }
 
-  void _handleSelection({
-    required Map<String, dynamic>? rect,
-    required String selectedText,
-    required String cfi,
-  }) {
+  void _handleSelection({required Map<String, dynamic>? rect, required String selectedText, required String cfi}) {
     if (!mounted) return;
-    
+
     try {
       final renderBox = context.findRenderObject() as RenderBox;
       final webViewSize = renderBox.size;
-      
+
       if (rect == null) {
         // Still call onTextSelected for basic selection functionality
-        widget.onTextSelected?.call(
-          EpubTextSelection(
-            selectedText: selectedText,
-            selectionCfi: cfi,
-          ),
-        );
+        widget.onTextSelected?.call(EpubTextSelection(selectedText: selectedText, selectionCfi: cfi));
         return;
       }
-      
+
       // Convert relative coordinates (0-1) to actual WebView coordinates
       final left = (rect['left'] as num).toDouble();
       final top = (rect['top'] as num).toDouble();
       final width = (rect['width'] as num).toDouble();
       final height = (rect['height'] as num).toDouble();
-      
+
       final scaledRect = Rect.fromLTWH(
         left * webViewSize.width,
         top * webViewSize.height,
         width * webViewSize.width,
         height * webViewSize.height,
       );
-      
+
       // Create viewRect in WebView-relative coordinates
-      final viewRect = Rect.fromLTWH(
-        0,
-        0,
-        webViewSize.width,
-        webViewSize.height
-      );
+      final viewRect = Rect.fromLTWH(0, 0, webViewSize.width, webViewSize.height);
 
       // Provide WebView-relative coordinates (not screen coordinates)
       widget.onSelection?.call(
         selectedText,
         cfi,
-        scaledRect,  // WebView-relative coordinates
+        scaledRect, // WebView-relative coordinates
         viewRect,
       );
     } catch (e) {
@@ -259,7 +240,7 @@ class _EpubViewerState extends State<EpubViewer> {
         final selectedText = data[1] as String;
         Map<String, dynamic>? rect;
         String? selectionXpath;
-        
+
         try {
           if (data.length > 2 && data[2] != null) {
             rect = Map<String, dynamic>.from(data[2] as Map);
@@ -284,11 +265,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
         // Always call basic text selection callback
         widget.onTextSelected?.call(
-          EpubTextSelection(
-            selectedText: selectedText,
-            selectionCfi: cfiString,
-            selectionXpath: selectionXpath,
-          ),
+          EpubTextSelection(selectedText: selectedText, selectionCfi: cfiString, selectionXpath: selectionXpath),
         );
 
         // If we have coordinates and a selection callback, provide full selection info
@@ -319,9 +296,7 @@ class _EpubViewerState extends State<EpubViewer> {
       callback: (data) async {
         var searchResult = data[0];
         widget.epubController.searchResultCompleter.complete(
-          List<EpubSearchResult>.from(
-            searchResult.map((e) => EpubSearchResult.fromJson(e)),
-          ),
+          List<EpubSearchResult>.from(searchResult.map((e) => EpubSearchResult.fromJson(e))),
         );
       },
     );
@@ -417,17 +392,13 @@ class _EpubViewerState extends State<EpubViewer> {
     bool allowScripted = displaySettings.allowScriptedContent;
     String cfi = widget.initialCfi ?? "";
     String? initialXPath = widget.initialXPath;
-    String direction =
-        widget.displaySettings?.defaultDirection.name ??
-        EpubDefaultDirection.ltr.name;
+    String direction = widget.displaySettings?.defaultDirection.name ?? EpubDefaultDirection.ltr.name;
     int fontSize = displaySettings.fontSize;
 
-    bool useCustomSwipe =
-        Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
+    bool useCustomSwipe = Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
-    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor
-        ?.toHex();
-    
+    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor?.toHex();
+
     bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
 
     String xpathParam = initialXPath != null ? '"$initialXPath"' : 'null';
@@ -443,17 +414,12 @@ class _EpubViewerState extends State<EpubViewer> {
     return Container(
       decoration: widget.displaySettings?.theme?.backgroundDecoration,
       child: InAppWebView(
-        contextMenu: widget.suppressNativeContextMenu 
-            ? ContextMenu(
-                menuItems: [],
-                settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
-              )
+        contextMenu: widget.suppressNativeContextMenu
+            ? ContextMenu(menuItems: [], settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true))
             : widget.selectionContextMenu,
         key: webViewKey,
-        initialFile:
-            'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-        initialSettings: settings
-          ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
+        initialFile: 'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+        initialSettings: settings..disableVerticalScroll = widget.displaySettings?.snap ?? false,
         onWebViewCreated: (controller) async {
           webViewController = controller;
           widget.epubController.setWebViewController(controller);
@@ -461,10 +427,7 @@ class _EpubViewerState extends State<EpubViewer> {
         },
         onLoadStart: (controller, url) {},
         onPermissionRequest: (controller, request) async {
-          return PermissionResponse(
-            resources: request.resources,
-            action: PermissionResponseAction.GRANT,
-          );
+          return PermissionResponse(resources: request.resources, action: PermissionResponseAction.GRANT);
         },
         shouldOverrideUrlLoading: (controller, navigationAction) async {
           return NavigationActionPolicy.ALLOW;
@@ -478,14 +441,244 @@ class _EpubViewerState extends State<EpubViewer> {
             debugPrint("JS_LOG: ${consoleMessage.message}");
           }
         },
+        onLongPressHitTestResult: (controller, hitTestResult) {
+          // On iPad, long press creates selection but events don't fire
+          // Trigger JavaScript to check for selection after a delay
+          // Also set up periodic checking for selection changes (when handles are dragged)
+          Future.delayed(const Duration(milliseconds: 300), () {
+            controller.evaluateJavascript(
+              source: '''
+              (function() {
+                try {
+                  // Check all content frames
+                  if (typeof rendition !== 'undefined' && rendition) {
+                    var allContents = rendition.getContents();
+                    allContents.forEach(function(contents, idx) {
+                      try {
+                        var selection = contents.window.getSelection();
+                        if (selection && selection.rangeCount > 0) {
+                          var range = selection.getRangeAt(0);
+                          var text = selection.toString();
+                          if (text && range && !range.collapsed) {
+                            // Try to get CFI
+                            if (typeof contents.cfiFromRange === 'function') {
+                              try {
+                                var cfiRange = contents.cfiFromRange(range);
+                                if (cfiRange) {
+                                  // Store this CFI to track changes
+                                  window.lastProcessedCfi = cfiRange.toString();
+                                  
+                                  // Call sendSelectionData if it exists (it should be globally available)
+                                  if (typeof window.sendSelectionData === 'function') {
+                                    try {
+                                      window.sendSelectionData(cfiRange, contents);
+                                    } catch (e) {
+                                      // Fallback to direct handler call with manual rect calculation
+                                      try {
+                                        var rect = null;
+                                        if (range) {
+                                          var clientRect = range.getBoundingClientRect();
+                                          var webViewWidth = window.innerWidth;
+                                          var webViewHeight = window.innerHeight;
+                                          var iframe = contents.document.defaultView.frameElement;
+                                          if (iframe) {
+                                            var iframeRect = iframe.getBoundingClientRect();
+                                            var absoluteLeft = iframeRect.left + clientRect.left;
+                                            var absoluteTop = iframeRect.top + clientRect.top;
+                                            rect = {
+                                              left: absoluteLeft / webViewWidth,
+                                              top: absoluteTop / webViewHeight,
+                                              width: clientRect.width / webViewWidth,
+                                              height: clientRect.height / webViewHeight,
+                                              contentHeight: webViewHeight
+                                            };
+                                          }
+                                        }
+                                        window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, rect, null);
+                                      } catch (e2) {
+                                        window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, null, null);
+                                      }
+                                    }
+                                  } else {
+                                    // Try to get rect manually as fallback
+                                    try {
+                                      var rect = null;
+                                      if (range) {
+                                        var clientRect = range.getBoundingClientRect();
+                                        var webViewWidth = window.innerWidth;
+                                        var webViewHeight = window.innerHeight;
+                                        var iframe = contents.document.defaultView.frameElement;
+                                        if (iframe) {
+                                          var iframeRect = iframe.getBoundingClientRect();
+                                          var absoluteLeft = iframeRect.left + clientRect.left;
+                                          var absoluteTop = iframeRect.top + clientRect.top;
+                                          rect = {
+                                            left: absoluteLeft / webViewWidth,
+                                            top: absoluteTop / webViewHeight,
+                                            width: clientRect.width / webViewWidth,
+                                            height: clientRect.height / webViewHeight,
+                                            contentHeight: webViewHeight
+                                          };
+                                        }
+                                      }
+                                      window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, rect, null);
+                                    } catch (e) {
+                                      window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, null, null);
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                // Ignore errors
+                              }
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        // Ignore errors
+                      }
+                    });
+                    
+                    // Also check parent window
+                    try {
+                      var parentSel = window.getSelection();
+                      if (parentSel && parentSel.rangeCount > 0) {
+                        var parentText = parentSel.toString();
+                        if (parentText) {
+                          // Try to match to a content frame
+                          allContents.forEach(function(contents, idx) {
+                            try {
+                              var range = parentSel.getRangeAt(0);
+                              if (range && !range.collapsed && typeof contents.cfiFromRange === 'function') {
+                                var cfiRange = contents.cfiFromRange(range);
+                                if (cfiRange) {
+                                  if (typeof window.sendSelectionData === 'function') {
+                                    window.sendSelectionData(cfiRange, contents);
+                                  } else {
+                                    window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), parentText, null, null);
+                                  }
+                                }
+                              }
+                            } catch (e) {
+                              // Try next frame
+                            }
+                          });
+                        }
+                      }
+                    } catch (e) {
+                      // Ignore errors
+                    }
+                  }
+                } catch (e) {
+                  // Ignore errors
+                }
+              })();
+            ''',
+            );
+
+            // Set up periodic checking for selection changes (when handles are dragged)
+            // Check every 150ms for up to 10 seconds after long press
+            var checkCount = 0;
+            var maxChecks = 67; // 67 * 150ms = ~10 seconds
+            Timer.periodic(const Duration(milliseconds: 150), (timer) {
+              checkCount++;
+              if (checkCount > maxChecks) {
+                timer.cancel();
+                return;
+              }
+
+              controller.evaluateJavascript(
+                source: '''
+                (function() {
+                  try {
+                    if (typeof rendition !== 'undefined' && rendition) {
+                      var allContents = rendition.getContents();
+                      var foundSelection = false;
+                      allContents.forEach(function(contents, idx) {
+                        try {
+                          var selection = contents.window.getSelection();
+                          if (selection && selection.rangeCount > 0) {
+                            var range = selection.getRangeAt(0);
+                            var text = selection.toString();
+                            if (text && range && !range.collapsed) {
+                              foundSelection = true;
+                              // Check if this is a new/different selection
+                              if (typeof contents.cfiFromRange === 'function') {
+                                try {
+                                  var cfiRange = contents.cfiFromRange(range);
+                                  if (cfiRange) {
+                                    var cfiString = cfiRange.toString();
+                                    // Only process if CFI changed (selection was modified)
+                                    if (cfiString !== window.lastProcessedCfi) {
+                                      window.lastProcessedCfi = cfiString;
+                                      if (typeof window.sendSelectionData === 'function') {
+                                        window.sendSelectionData(cfiRange, contents);
+                                      }
+                                    }
+                                  }
+                                } catch (e) {
+                                  // Ignore errors
+                                }
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          // Ignore errors
+                        }
+                      });
+                      
+                      // Also check parent window
+                      try {
+                        var parentSel = window.getSelection();
+                        if (parentSel && parentSel.rangeCount > 0) {
+                          var parentText = parentSel.toString();
+                          if (parentText) {
+                            foundSelection = true;
+                            var allContents = rendition.getContents();
+                            allContents.forEach(function(contents, idx) {
+                              try {
+                                var range = parentSel.getRangeAt(0);
+                                if (range && !range.collapsed && typeof contents.cfiFromRange === 'function') {
+                                  var cfiRange = contents.cfiFromRange(range);
+                                  if (cfiRange) {
+                                    var cfiString = cfiRange.toString();
+                                    if (cfiString !== window.lastProcessedCfi) {
+                                      window.lastProcessedCfi = cfiString;
+                                      if (typeof window.sendSelectionData === 'function') {
+                                        window.sendSelectionData(cfiRange, contents);
+                                      }
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                // Try next frame
+                              }
+                            });
+                          }
+                        }
+                      } catch (e) {
+                        // Ignore
+                      }
+                      
+                      // If no selection found after initial checks, stop checking
+                      if (!foundSelection && checkCount > 10) {
+                        // Selection was cleared, stop polling
+                        timer.cancel();
+                        return;
+                      }
+                    }
+                  } catch (e) {
+                    // Ignore errors
+                  }
+                })();
+              ''',
+              );
+            });
+          });
+        },
         gestureRecognizers: {
-          Factory<VerticalDragGestureRecognizer>(
-            () => VerticalDragGestureRecognizer(),
-          ),
+          Factory<VerticalDragGestureRecognizer>(() => VerticalDragGestureRecognizer()),
           Factory<LongPressGestureRecognizer>(
-            () => LongPressGestureRecognizer(
-              duration: const Duration(milliseconds: 30),
-            ),
+            () => LongPressGestureRecognizer(duration: const Duration(milliseconds: 30)),
           ),
         },
       ),
