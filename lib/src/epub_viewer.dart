@@ -151,7 +151,7 @@ class EpubViewer extends StatefulWidget {
 class _EpubViewerState extends State<EpubViewer> {
   final GlobalKey webViewKey = GlobalKey();
 
-  var selectedText = '';
+  Timer? _selectionCheckTimer; // Timer to periodically verify selection still exists
 
   InAppWebViewController? webViewController;
 
@@ -172,6 +172,156 @@ class _EpubViewerState extends State<EpubViewer> {
   @override
   void initState() {
     super.initState();
+  }
+
+  /// Block or unblock gestures using CSS touch-action when selection is active
+  void _blockGesturesWhenSelected(bool block) {
+    if (!mounted || webViewController == null) return;
+
+    // Use CSS touch-action to block horizontal panning/swiping when selection exists
+    // This works at the browser level, before JavaScript event handlers
+    // We apply it to the parent document and iframe elements (not sandboxed contents)
+    webViewController?.evaluateJavascript(
+      source:
+          '''
+      (function() {
+        try {
+          var styleId = 'epub-selection-block-style';
+          var existingStyle = document.getElementById(styleId);
+          
+          if (${block ? 'true' : 'false'}) {
+            // Block horizontal panning/swiping when selection exists
+            // Use 'pan-y' to allow vertical scrolling but block horizontal swipes
+            // Also add 'manipulation' to prevent double-tap zoom which can interfere
+            if (!existingStyle) {
+              var style = document.createElement('style');
+              style.id = styleId;
+              style.textContent = `
+                body, html, #viewer {
+                  touch-action: pan-y manipulation !important;
+                  -ms-touch-action: pan-y manipulation !important;
+                  -webkit-touch-callout: none !important;
+                  user-select: text !important;
+                }
+                body *, html *, #viewer * {
+                  touch-action: pan-y manipulation !important;
+                  -ms-touch-action: pan-y manipulation !important;
+                  user-select: text !important;
+                }
+                iframe {
+                  touch-action: pan-y manipulation !important;
+                  -ms-touch-action: pan-y manipulation !important;
+                  pointer-events: auto !important;
+                }
+                /* Block all horizontal gestures on iframes */
+                iframe[src], iframe[srcdoc] {
+                  touch-action: pan-y manipulation !important;
+                  -ms-touch-action: pan-y manipulation !important;
+                }
+              `;
+              document.head.appendChild(style);
+            }
+            
+            // Function to apply touch-action to iframes
+            function applyTouchActionToIframes() {
+              try {
+                var allIframes = document.querySelectorAll('iframe');
+                allIframes.forEach(function(iframe) {
+                  iframe.style.touchAction = 'pan-y manipulation';
+                  iframe.style.setProperty('-ms-touch-action', 'pan-y manipulation', 'important');
+                  iframe.style.setProperty('touch-action', 'pan-y manipulation', 'important');
+                });
+              } catch (e) {
+                console.error('Error setting iframe touch-action:', e);
+              }
+              
+              // Also try to get iframes from epub.js rendition
+              if (typeof rendition !== 'undefined' && rendition) {
+                try {
+                  var allContents = rendition.getContents();
+                  allContents.forEach(function(contents) {
+                    try {
+                      // Get the iframe element from the parent document
+                      var iframe = contents.document.defaultView.frameElement;
+                      if (iframe && iframe.style) {
+                        iframe.style.touchAction = 'pan-y manipulation';
+                        iframe.style.setProperty('-ms-touch-action', 'pan-y manipulation', 'important');
+                        iframe.style.setProperty('touch-action', 'pan-y manipulation', 'important');
+                      }
+                    } catch (e) {
+                      // Ignore errors - iframe might be sandboxed
+                    }
+                  });
+                } catch (e) {
+                  // Ignore errors
+                }
+              }
+            }
+            
+            // Apply immediately
+            applyTouchActionToIframes();
+            
+            // Watch for new iframes being added (epub.js creates them dynamically)
+            if (!window.epubIframeObserver) {
+              window.epubIframeObserver = new MutationObserver(function(mutations) {
+                applyTouchActionToIframes();
+              });
+              window.epubIframeObserver.observe(document.body || document.documentElement, {
+                childList: true,
+                subtree: true
+              });
+            }
+          } else {
+            // Remove blocking when selection is cleared
+            if (existingStyle) {
+              existingStyle.remove();
+            }
+            
+            // Stop observing if observer exists
+            if (window.epubIframeObserver) {
+              window.epubIframeObserver.disconnect();
+              window.epubIframeObserver = null;
+            }
+            
+            // Reset iframe styles
+            try {
+              var allIframes = document.querySelectorAll('iframe');
+              allIframes.forEach(function(iframe) {
+                iframe.style.touchAction = '';
+                iframe.style.removeProperty('-ms-touch-action');
+                iframe.style.removeProperty('touch-action');
+              });
+            } catch (e) {
+              // Ignore errors
+            }
+            
+            // Reset epub.js iframe styles
+            if (typeof rendition !== 'undefined' && rendition) {
+              try {
+                var allContents = rendition.getContents();
+                allContents.forEach(function(contents) {
+                  try {
+                    var iframe = contents.document.defaultView.frameElement;
+                    if (iframe && iframe.style) {
+                      iframe.style.touchAction = '';
+                      iframe.style.removeProperty('-ms-touch-action');
+                      iframe.style.removeProperty('touch-action');
+                    }
+                  } catch (e) {
+                    // Ignore errors
+                  }
+                });
+              } catch (e) {
+                // Ignore errors
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error blocking gestures:', e);
+        }
+      })();
+    ''',
+    );
   }
 
   void _handleSelection({required Map<String, dynamic>? rect, required String selectedText, required String cfi}) {
@@ -263,6 +413,10 @@ class _EpubViewerState extends State<EpubViewer> {
           selectionXpath = null;
         }
 
+        // Block gestures when selection is active
+        _blockGesturesWhenSelected(true);
+        _startSelectionMonitoring();
+
         // Always call basic text selection callback
         widget.onTextSelected?.call(
           EpubTextSelection(selectedText: selectedText, selectionCfi: cfiString, selectionXpath: selectionXpath),
@@ -279,6 +433,8 @@ class _EpubViewerState extends State<EpubViewer> {
     webViewController?.addJavaScriptHandler(
       handlerName: 'selectionCleared',
       callback: (args) {
+        _stopSelectionMonitoring();
+        _blockGesturesWhenSelected(false);
         widget.onDeselection?.call();
       },
     );
@@ -685,8 +841,133 @@ class _EpubViewerState extends State<EpubViewer> {
     );
   }
 
+  /// Start monitoring selection state to ensure blocking persists
+  void _startSelectionMonitoring() {
+    _stopSelectionMonitoring(); // Stop any existing timer
+
+    _selectionCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      if (!mounted || webViewController == null) {
+        timer.cancel();
+        return;
+      }
+
+      // Check if selection still exists and re-apply blocking if needed
+      webViewController
+          ?.evaluateJavascript(
+            source: '''
+        (function() {
+          try {
+            // Check if selection still exists
+            var hasSelection = false;
+            
+            if (typeof rendition !== 'undefined' && rendition) {
+              var allContents = rendition.getContents();
+              for (var i = 0; i < allContents.length; i++) {
+                try {
+                  var contents = allContents[i];
+                  if (contents.window && contents.window.getSelection) {
+                    var selection = contents.window.getSelection();
+                    if (selection && selection.rangeCount > 0) {
+                      var range = selection.getRangeAt(0);
+                      var text = selection.toString();
+                      if ((text && text.length > 0) || (range && !range.collapsed)) {
+                        hasSelection = true;
+                        break;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // Ignore errors
+                }
+              }
+            }
+            
+            // Also check parent window
+            if (!hasSelection && window.getSelection) {
+              var parentSel = window.getSelection();
+              if (parentSel && parentSel.rangeCount > 0) {
+                var parentRange = parentSel.getRangeAt(0);
+                var parentText = parentSel.toString();
+                if ((parentText && parentText.length > 0) || (parentRange && !parentRange.collapsed)) {
+                  hasSelection = true;
+                }
+              }
+            }
+            
+            // If selection exists, ensure blocking is still active
+            if (hasSelection) {
+              var styleId = 'epub-selection-block-style';
+              var existingStyle = document.getElementById(styleId);
+              
+              if (!existingStyle) {
+                // Re-apply blocking if it was removed - use 'pan-y manipulation' to block horizontal swipes
+                var style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                  body, html, #viewer {
+                    touch-action: pan-y manipulation !important;
+                    -ms-touch-action: pan-y manipulation !important;
+                    -webkit-touch-callout: none !important;
+                    user-select: text !important;
+                  }
+                  body *, html *, #viewer * {
+                    touch-action: pan-y manipulation !important;
+                    -ms-touch-action: pan-y manipulation !important;
+                    user-select: text !important;
+                  }
+                  iframe {
+                    touch-action: pan-y manipulation !important;
+                    -ms-touch-action: pan-y manipulation !important;
+                    pointer-events: auto !important;
+                  }
+                  iframe[src], iframe[srcdoc] {
+                    touch-action: pan-y manipulation !important;
+                    -ms-touch-action: pan-y manipulation !important;
+                  }
+                `;
+                document.head.appendChild(style);
+              }
+              
+              // Re-apply to iframes
+              try {
+                var allIframes = document.querySelectorAll('iframe');
+                allIframes.forEach(function(iframe) {
+                  iframe.style.touchAction = 'pan-y manipulation';
+                  iframe.style.setProperty('-ms-touch-action', 'pan-y manipulation', 'important');
+                  iframe.style.setProperty('touch-action', 'pan-y manipulation', 'important');
+                });
+              } catch (e) {
+                // Ignore errors
+              }
+            } else {
+              // No selection, stop monitoring
+              return 'no-selection';
+            }
+          } catch (e) {
+            console.error('Error checking selection:', e);
+          }
+        })();
+      ''',
+          )
+          .then((result) {
+            // If selection no longer exists, stop monitoring
+            if (result == 'no-selection') {
+              _stopSelectionMonitoring();
+              _blockGesturesWhenSelected(false);
+            }
+          });
+    });
+  }
+
+  /// Stop monitoring selection state
+  void _stopSelectionMonitoring() {
+    _selectionCheckTimer?.cancel();
+    _selectionCheckTimer = null;
+  }
+
   @override
   void dispose() {
+    _stopSelectionMonitoring();
     webViewController?.dispose();
     super.dispose();
   }
