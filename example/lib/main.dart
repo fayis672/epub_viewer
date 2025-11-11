@@ -70,7 +70,12 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              epubController.setFontSize(fontSize: 35);
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        SearchPage(epubController: epubController),
+                  ));
             },
           ),
         ],
