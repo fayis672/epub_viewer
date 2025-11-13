@@ -175,7 +175,15 @@ class EpubController {
     await webViewController?.evaluateJavascript(source: 'updateTheme("","$foregroundColor")');
   }
 
-  Completer<EpubTextExtractRes> pageTextCompleter = Completer<EpubTextExtractRes>();
+  Completer<EpubTextExtractRes>? _pageTextCompleter;
+  Completer<Rect?> cfiRectCompleter = Completer<Rect?>();
+
+  /// Safely complete the page text completer
+  void completePageText(EpubTextExtractRes result) {
+    if (_pageTextCompleter != null && !_pageTextCompleter!.isCompleted) {
+      _pageTextCompleter!.complete(result);
+    }
+  }
 
   ///Extract text from a given cfi range,
   Future<EpubTextExtractRes> extractText({
@@ -186,17 +194,44 @@ class EpubController {
     required endCfi,
   }) async {
     checkEpubLoaded();
-    pageTextCompleter = Completer<EpubTextExtractRes>();
+    // Complete previous completer if it exists and isn't completed
+    if (_pageTextCompleter != null && !_pageTextCompleter!.isCompleted) {
+      try {
+        _pageTextCompleter!.completeError('Cancelled by new request');
+      } catch (e) {
+        // Ignore if already completed
+      }
+    }
+    _pageTextCompleter = Completer<EpubTextExtractRes>();
     await webViewController?.evaluateJavascript(source: 'getTextFromCfi("$startCfi","$endCfi")');
-    return pageTextCompleter.future;
+    return _pageTextCompleter!.future;
+  }
+
+  ///Get bounding rectangle for a given CFI range
+  ///Returns WebView-relative coordinates in pixels, or null if rect cannot be determined
+  Future<Rect?> getRectFromCfi(String cfiRange) async {
+    checkEpubLoaded();
+    cfiRectCompleter = Completer<Rect?>();
+    // Escape quotes in the CFI string
+    var escapedCfi = cfiRange.replaceAll('"', '\\"');
+    await webViewController?.evaluateJavascript(source: 'getRectFromCfi("$escapedCfi")');
+    return cfiRectCompleter.future;
   }
 
   ///Extracts text content from current page
   Future<EpubTextExtractRes> extractCurrentPageText() async {
     checkEpubLoaded();
-    pageTextCompleter = Completer<EpubTextExtractRes>();
+    // Complete previous completer if it exists and isn't completed
+    if (_pageTextCompleter != null && !_pageTextCompleter!.isCompleted) {
+      try {
+        _pageTextCompleter!.completeError('Cancelled by new request');
+      } catch (e) {
+        // Ignore if already completed
+      }
+    }
+    _pageTextCompleter = Completer<EpubTextExtractRes>();
     await webViewController?.evaluateJavascript(source: 'getCurrentPageText()');
-    return pageTextCompleter.future;
+    return _pageTextCompleter!.future;
   }
 
   ///Given a percentage moves to the corresponding page

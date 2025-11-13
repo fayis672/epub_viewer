@@ -45,6 +45,7 @@ class EpubViewer extends StatefulWidget {
     this.onTouchUp,
     this.suppressNativeContextMenu = false,
     this.clearSelectionOnPageChange = true,
+    this.selectAnnotationRange = false,
   });
 
   //Epub controller to manage epub
@@ -88,7 +89,8 @@ class EpubViewer extends StatefulWidget {
   final EpubDisplaySettings? displaySettings;
 
   ///Callback for handling annotation click (Highlight and Underline)
-  final ValueChanged<String>? onAnnotationClicked;
+  ///Provides the CFI range and the selection rect (same format as onSelection)
+  final void Function(String cfiRange, Map<String, dynamic>? rect)? onAnnotationClicked;
 
   /// Context menu for text selection.
   /// If null, the default context menu will be used.
@@ -146,6 +148,16 @@ class EpubViewer extends StatefulWidget {
   /// Set to false if you want to preserve selection across page changes, though
   /// note that the selection may not be visible on the new page.
   final bool clearSelectionOnPageChange;
+
+  /// Whether to programmatically select annotation ranges when clicked.
+  ///
+  /// When true, clicking on an annotation (highlight/underline) will automatically
+  /// select the text range, triggering the selection event with the correct rect.
+  /// This is useful for displaying custom selection UI for annotations.
+  ///
+  /// When false (default), annotation clicks will only trigger [onAnnotationClicked]
+  /// without programmatically selecting the text.
+  final bool selectAnnotationRange;
 
   /// Callback fired when the user touches down on the EPUB viewer.
   ///
@@ -580,7 +592,18 @@ class _EpubViewerState extends State<EpubViewer> {
       handlerName: "markClicked",
       callback: (data) {
         String cfi = data[0];
-        widget.onAnnotationClicked?.call(cfi);
+        Map<String, dynamic>? rect;
+        try {
+          if (data.length > 1 && data[1] != null) {
+            rect = Map<String, dynamic>.from(data[1] as Map);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Error parsing annotation rect: $e');
+          }
+          rect = null;
+        }
+        widget.onAnnotationClicked?.call(cfi, rect);
       },
     );
 
@@ -600,9 +623,29 @@ class _EpubViewerState extends State<EpubViewer> {
           }
           xpathRange = null;
         }
-        widget.epubController.pageTextCompleter.complete(
-          EpubTextExtractRes(text: text, cfiRange: cfi, xpathRange: xpathRange),
-        );
+        widget.epubController.completePageText(EpubTextExtractRes(text: text, cfiRange: cfi, xpathRange: xpathRange));
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: "cfiRect",
+      callback: (data) {
+        try {
+          if (data.isNotEmpty && data[0] != null) {
+            final rectData = data[0] as Map<String, dynamic>;
+            final rect = Rect.fromLTRB(
+              (rectData['left'] as num).toDouble(),
+              (rectData['top'] as num).toDouble(),
+              (rectData['right'] as num).toDouble(),
+              (rectData['bottom'] as num).toDouble(),
+            );
+            widget.epubController.cfiRectCompleter.complete(rect);
+          } else {
+            widget.epubController.cfiRectCompleter.complete(null);
+          }
+        } catch (e) {
+          widget.epubController.cfiRectCompleter.completeError(e);
+        }
       },
     );
   }
@@ -630,7 +673,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", $xpathParam, "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange)',
+          'loadBook([${data.join(',')}], "$cfi", $xpathParam, "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange, ${widget.selectAnnotationRange})',
     );
   }
 
