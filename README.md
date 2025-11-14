@@ -10,6 +10,7 @@ A Flutter package for viewing Epub documents, developed by combining the power o
 - Resume reading using cfi
 - Custom context menus for selection
 - Load from File, URl, Assets
+- Touch event callbacks with normalized coordinates (onTouchDown, onTouchUp)
 
 <img width='50%' src="https://github.com/fayis672/epub_viewer/blob/main/example/epub_viewr_exp.gif?raw=true">
 
@@ -69,6 +70,14 @@ class _MyHomePageState extends State<MyHomePage> {
               onEpubLoaded: () async {},
               onRelocated: (value) {},
               onTextSelected: (epubTextSelection) {},
+              onTouchDown: (x, y) {
+                // Handle touch down at normalized coordinates (x, y)
+                // Use to determine which zone was tapped, control navigation, etc.
+              },
+              onTouchUp: (x, y) {
+                // Handle touch up at normalized coordinates (x, y)
+                // Use to determine which zone was tapped, control navigation, etc.
+              },
             ),
           ),
         ],
@@ -110,6 +119,22 @@ final  ValueChanged<EpubTextSelection>?  onTextSelected;
 
 ///Callback for handling annotation click (Highlight and Underline)
 final ValueChanged<String>? onAnnotationClicked;
+
+///Callback fired when the user touches down on the EPUB viewer.
+///Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
+///Coordinates use the same calculation logic as selection coordinates.
+///Fires regardless of whether there's an active text selection.
+///Parameters: [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
+///           [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
+final void Function(double x, double y)? onTouchDown;
+
+///Callback fired when the user releases a touch on the EPUB viewer.
+///Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
+///Coordinates use the same calculation logic as selection coordinates.
+///Fires regardless of whether there's an active text selection.
+///Parameters: [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
+///           [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
+final void Function(double x, double y)? onTouchUp;
 
 ///initial display settings
 final  EpubDisplaySettings?  displaySettings;

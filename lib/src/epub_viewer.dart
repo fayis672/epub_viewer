@@ -41,6 +41,8 @@ class EpubViewer extends StatefulWidget {
     this.onDeselection,
     this.onInitialPositionLoading,
     this.onInitialPositionLoaded,
+    this.onTouchDown,
+    this.onTouchUp,
     this.suppressNativeContextMenu = false,
     this.clearSelectionOnPageChange = true,
   });
@@ -144,6 +146,37 @@ class EpubViewer extends StatefulWidget {
   /// Set to false if you want to preserve selection across page changes, though
   /// note that the selection may not be visible on the new page.
   final bool clearSelectionOnPageChange;
+
+  /// Callback fired when the user touches down on the EPUB viewer.
+  ///
+  /// Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
+  /// Coordinates use the same calculation logic as selection coordinates.
+  ///
+  /// Fires regardless of whether there's an active text selection, allowing you to:
+  /// * Determine which zone of the EPUB viewer was tapped
+  /// * Compare tap location with selection location to trigger selection-specific pop-ups
+  /// * Control navigation and menus based on tap position
+  ///
+  /// Parameters:
+  /// * [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
+  /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
+  final void Function(double x, double y)? onTouchDown;
+
+  /// Callback fired when the user releases a touch on the EPUB viewer.
+  ///
+  /// Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
+  /// Coordinates use the same calculation logic as selection coordinates.
+  ///
+  /// Fires regardless of whether there's an active text selection, allowing you to:
+  /// * Determine which zone of the EPUB viewer was tapped
+  /// * Compare tap location with selection location to trigger selection-specific pop-ups
+  /// * Control navigation and menus based on tap position
+  ///
+  /// Parameters:
+  /// * [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
+  /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
+  final void Function(double x, double y)? onTouchUp;
+
   @override
   State<EpubViewer> createState() => _EpubViewerState();
 }
@@ -304,6 +337,42 @@ class _EpubViewerState extends State<EpubViewer> {
       handlerName: 'selectionChanging',
       callback: (args) {
         widget.onSelectionChanging?.call();
+      },
+    );
+
+    // Add touch down handler
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'onTouchDown',
+      callback: (data) {
+        try {
+          if (data.length >= 2) {
+            final x = (data[0] as num).toDouble();
+            final y = (data[1] as num).toDouble();
+            widget.onTouchDown?.call(x, y);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Error parsing onTouchDown coordinates: $e');
+          }
+        }
+      },
+    );
+
+    // Add touch up handler
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'onTouchUp',
+      callback: (data) {
+        try {
+          if (data.length >= 2) {
+            final x = (data[0] as num).toDouble();
+            final y = (data[1] as num).toDouble();
+            widget.onTouchUp?.call(x, y);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Error parsing onTouchUp coordinates: $e');
+          }
+        }
       },
     );
 
