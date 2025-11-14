@@ -151,7 +151,7 @@ class EpubViewer extends StatefulWidget {
 class _EpubViewerState extends State<EpubViewer> {
   final GlobalKey webViewKey = GlobalKey();
 
-  var selectedText = '';
+  Timer? _selectionCheckTimer; // Timer to periodically verify selection still exists
 
   InAppWebViewController? webViewController;
 
@@ -172,6 +172,16 @@ class _EpubViewerState extends State<EpubViewer> {
   @override
   void initState() {
     super.initState();
+  }
+
+  /// Block or unblock gestures using CSS touch-action when selection is active
+  void _blockGesturesWhenSelected(bool block) {
+    if (!mounted || webViewController == null) return;
+
+    // Use CSS touch-action to block horizontal panning/swiping when selection exists
+    // This works at the browser level, before JavaScript event handlers
+    // We apply it to the parent document and iframe elements (not sandboxed contents)
+    webViewController?.evaluateJavascript(source: 'blockGesturesWhenSelected(${block ? 'true' : 'false'})');
   }
 
   void _handleSelection({required Map<String, dynamic>? rect, required String selectedText, required String cfi}) {
@@ -263,6 +273,10 @@ class _EpubViewerState extends State<EpubViewer> {
           selectionXpath = null;
         }
 
+        // Block gestures when selection is active
+        _blockGesturesWhenSelected(true);
+        _startSelectionMonitoring();
+
         // Always call basic text selection callback
         widget.onTextSelected?.call(
           EpubTextSelection(selectedText: selectedText, selectionCfi: cfiString, selectionXpath: selectionXpath),
@@ -279,6 +293,8 @@ class _EpubViewerState extends State<EpubViewer> {
     webViewController?.addJavaScriptHandler(
       handlerName: 'selectionCleared',
       callback: (args) {
+        _stopSelectionMonitoring();
+        _blockGesturesWhenSelected(false);
         widget.onDeselection?.call();
       },
     );
@@ -446,134 +462,7 @@ class _EpubViewerState extends State<EpubViewer> {
           // Trigger JavaScript to check for selection after a delay
           // Also set up periodic checking for selection changes (when handles are dragged)
           Future.delayed(const Duration(milliseconds: 300), () {
-            controller.evaluateJavascript(
-              source: '''
-              (function() {
-                try {
-                  // Check all content frames
-                  if (typeof rendition !== 'undefined' && rendition) {
-                    var allContents = rendition.getContents();
-                    allContents.forEach(function(contents, idx) {
-                      try {
-                        var selection = contents.window.getSelection();
-                        if (selection && selection.rangeCount > 0) {
-                          var range = selection.getRangeAt(0);
-                          var text = selection.toString();
-                          if (text && range && !range.collapsed) {
-                            // Try to get CFI
-                            if (typeof contents.cfiFromRange === 'function') {
-                              try {
-                                var cfiRange = contents.cfiFromRange(range);
-                                if (cfiRange) {
-                                  // Store this CFI to track changes
-                                  window.lastProcessedCfi = cfiRange.toString();
-                                  
-                                  // Call sendSelectionData if it exists (it should be globally available)
-                                  if (typeof window.sendSelectionData === 'function') {
-                                    try {
-                                      window.sendSelectionData(cfiRange, contents);
-                                    } catch (e) {
-                                      // Fallback to direct handler call with manual rect calculation
-                                      try {
-                                        var rect = null;
-                                        if (range) {
-                                          var clientRect = range.getBoundingClientRect();
-                                          var webViewWidth = window.innerWidth;
-                                          var webViewHeight = window.innerHeight;
-                                          var iframe = contents.document.defaultView.frameElement;
-                                          if (iframe) {
-                                            var iframeRect = iframe.getBoundingClientRect();
-                                            var absoluteLeft = iframeRect.left + clientRect.left;
-                                            var absoluteTop = iframeRect.top + clientRect.top;
-                                            rect = {
-                                              left: absoluteLeft / webViewWidth,
-                                              top: absoluteTop / webViewHeight,
-                                              width: clientRect.width / webViewWidth,
-                                              height: clientRect.height / webViewHeight,
-                                              contentHeight: webViewHeight
-                                            };
-                                          }
-                                        }
-                                        window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, rect, null);
-                                      } catch (e2) {
-                                        window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, null, null);
-                                      }
-                                    }
-                                  } else {
-                                    // Try to get rect manually as fallback
-                                    try {
-                                      var rect = null;
-                                      if (range) {
-                                        var clientRect = range.getBoundingClientRect();
-                                        var webViewWidth = window.innerWidth;
-                                        var webViewHeight = window.innerHeight;
-                                        var iframe = contents.document.defaultView.frameElement;
-                                        if (iframe) {
-                                          var iframeRect = iframe.getBoundingClientRect();
-                                          var absoluteLeft = iframeRect.left + clientRect.left;
-                                          var absoluteTop = iframeRect.top + clientRect.top;
-                                          rect = {
-                                            left: absoluteLeft / webViewWidth,
-                                            top: absoluteTop / webViewHeight,
-                                            width: clientRect.width / webViewWidth,
-                                            height: clientRect.height / webViewHeight,
-                                            contentHeight: webViewHeight
-                                          };
-                                        }
-                                      }
-                                      window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, rect, null);
-                                    } catch (e) {
-                                      window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), text, null, null);
-                                    }
-                                  }
-                                }
-                              } catch (e) {
-                                // Ignore errors
-                              }
-                            }
-                          }
-                        }
-                      } catch (e) {
-                        // Ignore errors
-                      }
-                    });
-                    
-                    // Also check parent window
-                    try {
-                      var parentSel = window.getSelection();
-                      if (parentSel && parentSel.rangeCount > 0) {
-                        var parentText = parentSel.toString();
-                        if (parentText) {
-                          // Try to match to a content frame
-                          allContents.forEach(function(contents, idx) {
-                            try {
-                              var range = parentSel.getRangeAt(0);
-                              if (range && !range.collapsed && typeof contents.cfiFromRange === 'function') {
-                                var cfiRange = contents.cfiFromRange(range);
-                                if (cfiRange) {
-                                  if (typeof window.sendSelectionData === 'function') {
-                                    window.sendSelectionData(cfiRange, contents);
-                                  } else {
-                                    window.flutter_inappwebview.callHandler('selection', cfiRange.toString(), parentText, null, null);
-                                  }
-                                }
-                              }
-                            } catch (e) {
-                              // Try next frame
-                            }
-                          });
-                        }
-                      }
-                    } catch (e) {
-                      // Ignore errors
-                    }
-                  }
-                } catch (e) {
-                  // Ignore errors
-                }
-              })();
-            ''',
-            );
+            controller.evaluateJavascript(source: 'checkSelectionAfterLongPress()');
 
             // Set up periodic checking for selection changes (when handles are dragged)
             // Check every 150ms for up to 10 seconds after long press
@@ -586,92 +475,7 @@ class _EpubViewerState extends State<EpubViewer> {
                 return;
               }
 
-              controller.evaluateJavascript(
-                source: '''
-                (function() {
-                  try {
-                    if (typeof rendition !== 'undefined' && rendition) {
-                      var allContents = rendition.getContents();
-                      var foundSelection = false;
-                      allContents.forEach(function(contents, idx) {
-                        try {
-                          var selection = contents.window.getSelection();
-                          if (selection && selection.rangeCount > 0) {
-                            var range = selection.getRangeAt(0);
-                            var text = selection.toString();
-                            if (text && range && !range.collapsed) {
-                              foundSelection = true;
-                              // Check if this is a new/different selection
-                              if (typeof contents.cfiFromRange === 'function') {
-                                try {
-                                  var cfiRange = contents.cfiFromRange(range);
-                                  if (cfiRange) {
-                                    var cfiString = cfiRange.toString();
-                                    // Only process if CFI changed (selection was modified)
-                                    if (cfiString !== window.lastProcessedCfi) {
-                                      window.lastProcessedCfi = cfiString;
-                                      if (typeof window.sendSelectionData === 'function') {
-                                        window.sendSelectionData(cfiRange, contents);
-                                      }
-                                    }
-                                  }
-                                } catch (e) {
-                                  // Ignore errors
-                                }
-                              }
-                            }
-                          }
-                        } catch (e) {
-                          // Ignore errors
-                        }
-                      });
-                      
-                      // Also check parent window
-                      try {
-                        var parentSel = window.getSelection();
-                        if (parentSel && parentSel.rangeCount > 0) {
-                          var parentText = parentSel.toString();
-                          if (parentText) {
-                            foundSelection = true;
-                            var allContents = rendition.getContents();
-                            allContents.forEach(function(contents, idx) {
-                              try {
-                                var range = parentSel.getRangeAt(0);
-                                if (range && !range.collapsed && typeof contents.cfiFromRange === 'function') {
-                                  var cfiRange = contents.cfiFromRange(range);
-                                  if (cfiRange) {
-                                    var cfiString = cfiRange.toString();
-                                    if (cfiString !== window.lastProcessedCfi) {
-                                      window.lastProcessedCfi = cfiString;
-                                      if (typeof window.sendSelectionData === 'function') {
-                                        window.sendSelectionData(cfiRange, contents);
-                                      }
-                                    }
-                                  }
-                                }
-                              } catch (e) {
-                                // Try next frame
-                              }
-                            });
-                          }
-                        }
-                      } catch (e) {
-                        // Ignore
-                      }
-                      
-                      // If no selection found after initial checks, stop checking
-                      if (!foundSelection && checkCount > 10) {
-                        // Selection was cleared, stop polling
-                        timer.cancel();
-                        return;
-                      }
-                    }
-                  } catch (e) {
-                    // Ignore errors
-                  }
-                })();
-              ''',
-              );
+              controller.evaluateJavascript(source: 'checkSelectionPeriodically()');
             });
           });
         },
@@ -685,8 +489,36 @@ class _EpubViewerState extends State<EpubViewer> {
     );
   }
 
+  /// Start monitoring selection state to ensure blocking persists
+  void _startSelectionMonitoring() {
+    _stopSelectionMonitoring(); // Stop any existing timer
+
+    _selectionCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      if (!mounted || webViewController == null) {
+        timer.cancel();
+        return;
+      }
+
+      // Check if selection still exists and re-apply blocking if needed
+      webViewController?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()').then((result) {
+        // If selection no longer exists, stop monitoring
+        if (result == 'no-selection') {
+          _stopSelectionMonitoring();
+          _blockGesturesWhenSelected(false);
+        }
+      });
+    });
+  }
+
+  /// Stop monitoring selection state
+  void _stopSelectionMonitoring() {
+    _selectionCheckTimer?.cancel();
+    _selectionCheckTimer = null;
+  }
+
   @override
   void dispose() {
+    _stopSelectionMonitoring();
     webViewController?.dispose();
     super.dispose();
   }
