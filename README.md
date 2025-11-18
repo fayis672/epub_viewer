@@ -70,6 +70,11 @@ class _MyHomePageState extends State<MyHomePage> {
               onEpubLoaded: () async {},
               onRelocated: (value) {},
               onTextSelected: (epubTextSelection) {},
+              onAnnotationClicked: (cfiRange, rect) {
+                // Handle annotation click
+                // If selectAnnotationRange is true, the selection event will also fire
+              },
+              selectAnnotationRange: true, // Enable programmatic selection for annotations
               onTouchDown: (x, y) {
                 // Handle touch down at normalized coordinates (x, y)
                 // Use to determine which zone was tapped, control navigation, etc.
@@ -118,7 +123,16 @@ final  ValueChanged<EpubLocation>?  onRelocated;
 final  ValueChanged<EpubTextSelection>?  onTextSelected;
 
 ///Callback for handling annotation click (Highlight and Underline)
-final ValueChanged<String>? onAnnotationClicked;
+///Provides the CFI range and the selection rect (same format as onSelection)
+final void Function(String cfiRange, Map<String, dynamic>? rect)? onAnnotationClicked;
+
+///Whether to programmatically select annotation ranges when clicked.
+///When true, clicking on an annotation (highlight/underline) will automatically
+///select the text range, triggering the selection event with the correct rect.
+///This is useful for displaying custom selection UI for annotations.
+///When false (default), annotation clicks will only trigger onAnnotationClicked
+///without programmatically selecting the text.
+final bool selectAnnotationRange;
 
 ///Callback fired when the user touches down on the EPUB viewer.
 ///Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
