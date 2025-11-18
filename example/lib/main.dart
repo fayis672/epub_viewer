@@ -128,7 +128,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       progress = value.progress;
                     });
                   },
-                  onAnnotationClicked: (cfi) {
+                  onAnnotationClicked: (cfi, data) {
                     print("Annotation clicked $cfi");
                   },
                   onTextSelected: (epubTextSelection) {
@@ -149,6 +149,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   onSelectionChanging: () {
                     print("on slection chnages");
                   },
+                  onTouchDown: (x, y) {
+                    print("Touch down at $x , $y");
+                  },
+                  onTouchUp: (x, y) {
+                    print("Touch up at $x , $y");
+                  },
+                  selectAnnotationRange: true,
                 ),
                 Visibility(
                   visible: isLoading,
