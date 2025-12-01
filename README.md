@@ -1,48 +1,58 @@
-A Flutter package for viewing Epub documents, developed by combining the power of [Epubjs](https://github.com/futurepress/epub.js) and [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview)
+# Flutter Epub Viewer
 
-## Features
+[![Pub Version](https://img.shields.io/pub/v/flutter_epub_viewer?color=blue)](https://pub.dev/packages/flutter_epub_viewer)
+[![License](https://img.shields.io/github/license/fayis672/epub_viewer)](https://github.com/fayis672/epub_viewer/blob/main/LICENSE)
 
-- Highlight text
-- Search in Epub
-- List chapters
-- Text selection
-- Highly customizable UI
-- Resume reading using cfi
-- Custom context menus for selection
-- Load from File, URl, Assets
-- Touch event callbacks with normalized coordinates (onTouchDown, onTouchUp)
+A powerful Flutter package for viewing EPUB documents, built by combining the capabilities of [Epub.js](https://github.com/futurepress/epub.js) and [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview). This package provides a highly customizable and feature-rich EPUB reader for your Flutter applications.
 
-<img width='50%' src="https://github.com/fayis672/epub_viewer/blob/main/example/epub_viewr_exp.gif?raw=true">
+<img width='50%' src="https://github.com/fayis672/epub_viewer/blob/main/example/epub_viewr_exp.gif?raw=true" alt="Demo GIF">
 
-## Limitations
+## ✨ Features
 
-- opf format not supported fully
+*   **Text Highlighting**: Highlight important text within the EPUB.
+*   **Search Functionality**: Search for specific terms or phrases within the book.
+*   **Chapter Listing**: Easy navigation through chapters.
+*   **Text Selection**: Select text for copying or other actions.
+*   **Customizable UI**: Tailor the look and feel to match your app's design.
+*   **Reading Progress**: Resume reading from where you left off using CFI (Canonical Fragment Identifier).
+*   **Custom Context Menus**: Define custom actions for text selection.
+*   **Versatile Loading**: Load EPUBs from Files, URLs, or Assets.
+*   **Touch Interactions**: Receive touch event callbacks with normalized coordinates (`onTouchDown`, `onTouchUp`).
 
-## Getting started
+## 🚀 Getting Started
 
-In your Flutter project add the dependency:
+### Installation
+
+Add the dependency to your `pubspec.yaml` file:
 
 ```shell
 flutter pub add flutter_epub_viewer
 ```
 
-- ### Important: Complete the platfrom-wise setup from [here](https://inappwebview.dev/docs/intro)
-- Enable clear text traffic, [instructions here](https://stackoverflow.com/questions/45940861/android-8-cleartext-http-traffic-not-permitted/50834600#50834600)
+### Platform Setup
 
-Make sure to follow and complete each step
+#### Android
 
-## Usage
+**Important**: You must enable cleartext traffic for the viewer to function correctly on Android 8.0+.
 
-### Basic usage
+Add `android:usesCleartextTraffic="true"` to your `AndroidManifest.xml` file in the `<application>` tag.
+
+For more details, refer to this [StackOverflow answer](https://stackoverflow.com/questions/45940861/android-8-cleartext-http-traffic-not-permitted/50834600#50834600).
+
+Also, ensure you complete the platform-wise setup for `flutter_inappwebview` as described [here](https://inappwebview.dev/docs/intro).
+
+## 📖 Usage
+
+### Basic Example
+
+Here is a simple example of how to use `EpubViewer` in your application:
 
 ```dart
 import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
 import 'package:flutter/material.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -51,194 +61,135 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final epubController = EpubController();
 
-  var textSelectionCfi = '';
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-          child: Column(
-        children: [
-          Expanded(
-            child: EpubViewer(
-              epubSource: EpubSource.fromUrl(
-                  'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
-              epubController: epubController,
-              displaySettings:
-                  EpubDisplaySettings(flow: EpubFlow.paginated, snap: true),
-              onChaptersLoaded: (chapters) {},
-              onEpubLoaded: () async {},
-              onRelocated: (value) {},
-              onTextSelected: (epubTextSelection) {},
-              onAnnotationClicked: (cfiRange, rect) {
-                // Handle annotation click
-                // If selectAnnotationRange is true, the selection event will also fire
-              },
-              selectAnnotationRange: true, // Enable programmatic selection for annotations
-              onTouchDown: (x, y) {
-                // Handle touch down at normalized coordinates (x, y)
-                // Use to determine which zone was tapped, control navigation, etc.
-              },
-              onTouchUp: (x, y) {
-                // Handle touch up at normalized coordinates (x, y)
-                // Use to determine which zone was tapped, control navigation, etc.
-              },
-            ),
-          ),
-        ],
-      )),
+        child: EpubViewer(
+          epubSource: EpubSource.fromUrl(
+              'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
+          epubController: epubController,
+          displaySettings:
+              EpubDisplaySettings(flow: EpubFlow.paginated, snap: true),
+          onChaptersLoaded: (chapters) {
+            // Handle chapters loaded
+          },
+          onEpubLoaded: () async {
+            // Handle epub loaded
+          },
+          onRelocated: (value) {
+            // Handle page change
+          },
+          onTextSelected: (epubTextSelection) {
+            // Handle text selection
+          },
+        ),
+      ),
     );
   }
 }
-
 ```
 
-### Parameters and callbacks
+### Parameters
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `epubController` | `EpubController` | Controller to manage EPUB actions and state. |
+| `epubSource` | `EpubSource` | Source of the EPUB (URL, File, or Asset). **Note**: OPF format is not fully tested. |
+| `headers` | `Map<String, String>` | HTTP headers for loading EPUBs from the network. |
+| `initialCfi` | `String?` | Initial CFI string to specify the starting position. Defaults to the first chapter if null. |
+| `displaySettings` | `EpubDisplaySettings?` | Initial display settings (flow, snap, etc.). |
+| `selectionContextMenu` | `ContextMenu?` | Custom context menu for text selection. If null, the default menu is used. |
+| `selectAnnotationRange` | `bool` | If `true`, clicking an annotation automatically selects the text range. Defaults to `false`. |
+
+### Callbacks
+
+| Callback | Description |
+| :--- | :--- |
+| `onEpubLoaded` | Called when the EPUB is successfully loaded and displayed. |
+| `onChaptersLoaded` | Called when the chapters are loaded. Returns a list of `EpubChapter`. |
+| `onRelocated` | Called when the EPUB page changes. Returns `EpubLocation`. |
+| `onTextSelected` | Called when text is selected. Returns `EpubTextSelection`. |
+| `onAnnotationClicked` | Called when an annotation (highlight/underline) is clicked. Provides CFI range and rect. |
+| `onTouchDown` | Called on touch down event. Provides normalized (x, y) coordinates. |
+| `onTouchUp` | Called on touch up event. Provides normalized (x, y) coordinates. |
+
+### EpubController Methods
+
+Use the `EpubController` to interact with the viewer programmatically:
 
 ```dart
-//Epub controller to manage epub
-final  EpubController  epubController;
+// Navigation
+epubController.display(cfi: cfiString); // Move to specific CFI or chapter href
+epubController.next(); // Go to next page
+epubController.prev(); // Go to previous page
+epubController.toProgressPercentage(0.5); // Go to 50% progress
+epubController.moveToFistPage(); // Go to first page
+epubController.moveToLastPage(); // Go to last page
 
-///Epub source, accepts url, file or assets
-///opf format is not tested, use with caution
-final  EpubSource epubSource;
+// Information
+epubController.getCurrentLocation(); // Get current location info
+epubController.getChapters(); // Get list of chapters
+epubController.getMetadata(); // Get book metadata
 
-///Epub headers to load epub from network
-final  Map<String, String> headers;
+// Search
+epubController.search(query: "search term"); // Search in EPUB
 
-///Initial cfi string to specify which part of epub to load initially
-///if null, the first chapter will be loaded
-final  String?  initialCfi;
+// Annotations
+epubController.addHighlight(cfi: cfiString, color: Colors.yellow); // Add highlight
+epubController.removeHighlight(cfi: cfiString); // Remove highlight
+epubController.addUnderline(cfi: cfiString); // Add underline
+epubController.removeUnderline(cfi: cfiString); // Remove underline
 
-///Call back when epub is loaded and displayed
-final  VoidCallback?  onEpubLoaded;
+// Selection
+epubController.clearSelection(); // Clear active selection
+epubController.extractText(startCfi: start, endCfi: end); // Extract text from range
+epubController.extractCurrentPageText(); // Extract text from current page
 
-///Call back when chapters are loaded
-final  ValueChanged<List<EpubChapter>>?  onChaptersLoaded;
-
-///Call back when epub page changes
-final  ValueChanged<EpubLocation>?  onRelocated;
-
-///Call back when text selection changes
-final  ValueChanged<EpubTextSelection>?  onTextSelected;
-
-///Callback for handling annotation click (Highlight and Underline)
-///Provides the CFI range and the selection rect (same format as onSelection)
-final void Function(String cfiRange, Map<String, dynamic>? rect)? onAnnotationClicked;
-
-///Whether to programmatically select annotation ranges when clicked.
-///When true, clicking on an annotation (highlight/underline) will automatically
-///select the text range, triggering the selection event with the correct rect.
-///This is useful for displaying custom selection UI for annotations.
-///When false (default), annotation clicks will only trigger onAnnotationClicked
-///without programmatically selecting the text.
-final bool selectAnnotationRange;
-
-///Callback fired when the user touches down on the EPUB viewer.
-///Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
-///Coordinates use the same calculation logic as selection coordinates.
-///Fires regardless of whether there's an active text selection.
-///Parameters: [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
-///           [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
-final void Function(double x, double y)? onTouchDown;
-
-///Callback fired when the user releases a touch on the EPUB viewer.
-///Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
-///Coordinates use the same calculation logic as selection coordinates.
-///Fires regardless of whether there's an active text selection.
-///Parameters: [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
-///           [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
-final void Function(double x, double y)? onTouchUp;
-
-///initial display settings
-final  EpubDisplaySettings?  displaySettings;
-
-///context menu for text selection
-///if null, the default context menu will be used
-final  ContextMenu?  selectionContextMenu;
+// Settings
+epubController.setSpread(spread: EpubSpread.auto); // Set spread mode
+epubController.setFlow(flow: EpubFlow.paginated); // Set flow mode
+epubController.setManager(manager: EpubManager.defaultManager); // Set manager
+epubController.setFontSize(fontSize: 16); // Adjust font size
 ```
 
-### Methods
+## ⚠️ Limitations & Known Issues
 
-```dart
-///Move epub view to a specific area using Cfi string or chapter href
-epubController.display(cfi:cfiString)
+*   **OPF Support**: The OPF format is not fully supported yet.
+*   **Android Animation**: `onRelocated` callback may be broken when `useSnapAnimationAndroid` is set to `true` in `EpubDisplaySettings` on Android.
+*   **Scrolled Flow**: Chapter navigation might break initially when using `scrolled` flow.
 
-///moves to next page
-epubController.next()
+## 🔮 Upcoming Features
 
-///Moves to the previous page in epub view
-epubController.prev()
+*   Advanced annotation customization.
+*   Additional callbacks (e.g., rendered, error events).
 
-///Returns the current location of epub viewer
-epubController.getCurrentLocation()
+## 🤝 Contributing
 
-///Returns list of [EpubChapter] from epub,
-/// should be called after onChaptersLoaded callback, otherwise returns empty list
-epubController.getChapters()
+Contributions are welcome! We appreciate your help in making this package better.
 
-///Search in epub using query string
-///Returns a list of [EpubSearchResult]
-epubController.search(query:query)
+1.  **Fork** the repository on GitHub.
+2.  **Clone** your fork locally.
+3.  **Create a new branch** for your feature or bug fix.
+4.  **Commit** your changes with descriptive commit messages.
+5.  **Push** your branch to your fork.
+6.  **Submit a Pull Request** to the main repository.
 
-///Adds a highlight to epub viewer
-epubController.addHighlight(
-	cfi:cfiString,
-	color:color
-	opacity:0,5
-)
+Please ensure your code follows the existing style and includes relevant tests.
 
-///remove highlight
-epubController.removeHighlight(cfi:cfi)
+## 📄 License
 
-///Add underline annotation
-epubController.addUnderline(cfi:cfi)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-///Remove underline annotation
-epubController.removeUnderline(cfi:cfi)
+## ❤️ Acknowledgments
 
-///Clears any active text selection in the epub viewer
-epubController.clearSelection()
+*   [Epub.js](https://github.com/futurepress/epub.js) for the core EPUB rendering engine.
+*   [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview) for the powerful WebView integration.
 
-///Set [EpubSpread] value
-epubController.setSpread(spread:spread)
+## 👥 Contributors
 
-///Set [EpubFlow] value
-epubController.setFlow(flow:flow)
+Big thanks to all the contributors who have helped build this project!
 
-///Set [EpubManager] value
-epubController.setManager(manager:manager)
-
-///Adjust font size in epub viewer
-epubController.setFontSize(fontSize:16)
-
-///Extract text from a given cfi range
-epubController.extractText(startCfi:cfi,endCfi:cfi)
-
-///Extract text from current page
-epubController.extractCurrentPageText()
-
- ///Given a percentage moves to the corresponding page
-///Progress percentage should be between 0.0 and 1.0
-epubController.toProgressPercentage(progressPercent)
-
-///Move to the first page
- epubController.moveToFistPage();
-
-///Move to the last page
- epubController.moveToLastPage();
-
- /// get books metadata
- /// return [EpubMetadata]
- epubController.getMetadata();
-```
-
-## Known Issues
-
-- `onRelocated` callback is broken when `useSnapAnimationAndroid==true` in `epubDisplaySettings` for android
-- in `scrolled` flow, chapter navigation breaks initially.
-
-## Upcoming features
-
-- Annotations customization
-- More callbacks (rendered, error etc)
+<a href="https://github.com/fayis672/epub_viewer/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=fayis672/epub_viewer" />
+</a>

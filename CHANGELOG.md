@@ -1,3 +1,6 @@
+## 1.2.6
+- Fixed dispose issue ([#71](https://github.com/fayis672/epub_viewer/issues/71))
+
 ## 1.2.5
 - Added onTouchUp and onTouchDown ([#93](https://github.com/fayis672/epub_viewer/pull/93))
 - Add selectAnnotationRange parameter to control annotation selection behavior ([#96](https://github.com/fayis672/epub_viewer/pull/96))
