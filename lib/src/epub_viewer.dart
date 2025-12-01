@@ -631,7 +631,6 @@ class _EpubViewerState extends State<EpubViewer> {
   @override
   void dispose() {
     _stopSelectionMonitoring();
-    webViewController?.dispose();
     super.dispose();
   }
 }
