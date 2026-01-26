@@ -1,3 +1,6 @@
+## 1.2.7
+- Added `customCss` support in `EpubTheme` for granular styling
+
 ## 1.2.6
 - Fixed dispose issue ([#71](https://github.com/fayis672/epub_viewer/issues/71))
 

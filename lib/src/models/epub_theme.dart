@@ -12,19 +12,25 @@ enum EpubThemeType { dark, light, custom }
 @ColorConverter()
 class EpubTheme {
   @JsonKey(toJson: _decorationToJson, fromJson: _decorationFromJson)
+  ///Background decoration of the reader, overrides customCss
   Decoration? backgroundDecoration;
+  ///Foreground color of the reader, overrides customCss
   Color? foregroundColor;
+  ///Custom css for the reader
+  Map<String, dynamic>? customCss;
   EpubThemeType themeType;
 
   EpubTheme({
     this.backgroundDecoration,
     this.foregroundColor,
+    this.customCss,
     required this.themeType,
   });
 
   static _decorationToJson(Decoration? decoration) {
     return null;
   }
+
   static Decoration? _decorationFromJson(Map<String, dynamic> json) {
     return null;
   }
@@ -32,9 +38,7 @@ class EpubTheme {
   /// Uses dark theme, black background and white foreground color
   factory EpubTheme.dark() {
     return EpubTheme(
-      backgroundDecoration: const BoxDecoration(
-        color: Color(0xff121212)
-      ),
+      backgroundDecoration: const BoxDecoration(color: Color(0xff121212)),
       foregroundColor: Colors.white,
       themeType: EpubThemeType.dark,
     );
@@ -43,9 +47,7 @@ class EpubTheme {
   /// Uses light theme, white background and black foreground color
   factory EpubTheme.light() {
     return EpubTheme(
-      backgroundDecoration: const BoxDecoration(
-          color: Colors.white,
-      ),
+      backgroundDecoration: const BoxDecoration(color: Colors.white),
       foregroundColor: Colors.black,
       themeType: EpubThemeType.light,
     );
@@ -53,12 +55,14 @@ class EpubTheme {
 
   /// Custom theme option ,
   factory EpubTheme.custom({
-    required Decoration backgroundDecoration,
-    required Color foregroundColor,
+    Decoration? backgroundDecoration,
+    Color? foregroundColor,
+    Map<String, dynamic>? customCss,
   }) {
     return EpubTheme(
       backgroundDecoration: backgroundDecoration,
       foregroundColor: foregroundColor,
+      customCss: customCss,
       themeType: EpubThemeType.custom,
     );
   }

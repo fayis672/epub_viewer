@@ -48,7 +48,9 @@ class EpubController {
   ///Returns current location of epub viewer
   Future<EpubLocation> getCurrentLocation() async {
     checkEpubLoaded();
-    final result = await webViewController?.evaluateJavascript(source: 'getCurrentLocation()');
+    final result = await webViewController?.evaluateJavascript(
+      source: 'getCurrentLocation()',
+    );
 
     if (result == null) {
       throw Exception("Epub locations not loaded");
@@ -69,7 +71,9 @@ class EpubController {
 
     checkEpubLoaded();
 
-    final result = await webViewController!.evaluateJavascript(source: 'getChapters()');
+    final result = await webViewController!.evaluateJavascript(
+      source: 'getChapters()',
+    );
 
     _chapters = parseChapterList(result);
     return _chapters;
@@ -77,7 +81,9 @@ class EpubController {
 
   Future<EpubMetadata> getMetadata() async {
     checkEpubLoaded();
-    final result = await webViewController!.evaluateJavascript(source: 'getBookInfo()');
+    final result = await webViewController!.evaluateJavascript(
+      source: 'getBookInfo()',
+    );
     return EpubMetadata.fromJson(result);
   }
 
@@ -93,7 +99,9 @@ class EpubController {
     searchResultCompleter = Completer<List<EpubSearchResult>>();
     if (query.isEmpty) return [];
     checkEpubLoaded();
-    await webViewController?.evaluateJavascript(source: 'searchInBook("$query")');
+    await webViewController?.evaluateJavascript(
+      source: 'searchInBook("$query")',
+    );
     return await searchResultCompleter.future;
   }
 
@@ -111,7 +119,9 @@ class EpubController {
     var colorHex = color.toHex();
     var opacityString = opacity.toString();
     checkEpubLoaded();
-    webViewController?.evaluateJavascript(source: 'addHighlight("$cfi", "$colorHex", "$opacityString")');
+    webViewController?.evaluateJavascript(
+      source: 'addHighlight("$cfi", "$colorHex", "$opacityString")',
+    );
   }
 
   ///Adds a underline annotation
@@ -162,17 +172,26 @@ class EpubController {
 
   ///Set [EpubManager] value
   setManager({required EpubManager manager}) async {
-    await webViewController?.evaluateJavascript(source: 'setManager("$manager")');
+    await webViewController?.evaluateJavascript(
+      source: 'setManager("$manager")',
+    );
   }
 
   ///Adjust font size in epub viewer
   setFontSize({required double fontSize}) async {
-    await webViewController?.evaluateJavascript(source: 'setFontSize("$fontSize")');
+    await webViewController?.evaluateJavascript(
+      source: 'setFontSize("$fontSize")',
+    );
   }
 
   updateTheme({required EpubTheme theme}) async {
     String? foregroundColor = theme.foregroundColor?.toHex();
-    await webViewController?.evaluateJavascript(source: 'updateTheme("","$foregroundColor")');
+    String customCss = theme.customCss != null
+        ? Utils.encodeMap(theme.customCss!)
+        : "null";
+    await webViewController?.evaluateJavascript(
+      source: 'updateTheme("","$foregroundColor", $customCss)',
+    );
   }
 
   Completer<EpubTextExtractRes>? _pageTextCompleter;
@@ -203,7 +222,9 @@ class EpubController {
       }
     }
     _pageTextCompleter = Completer<EpubTextExtractRes>();
-    await webViewController?.evaluateJavascript(source: 'getTextFromCfi("$startCfi","$endCfi")');
+    await webViewController?.evaluateJavascript(
+      source: 'getTextFromCfi("$startCfi","$endCfi")',
+    );
     return _pageTextCompleter!.future;
   }
 
@@ -214,7 +235,9 @@ class EpubController {
     cfiRectCompleter = Completer<Rect?>();
     // Escape quotes in the CFI string
     var escapedCfi = cfiRange.replaceAll('"', '\\"');
-    await webViewController?.evaluateJavascript(source: 'getRectFromCfi("$escapedCfi")');
+    await webViewController?.evaluateJavascript(
+      source: 'getRectFromCfi("$escapedCfi")',
+    );
     return cfiRectCompleter.future;
   }
 
@@ -237,9 +260,14 @@ class EpubController {
   ///Given a percentage moves to the corresponding page
   ///Progress percentage should be between 0.0 and 1.0
   toProgressPercentage(double progressPercent) {
-    assert(progressPercent >= 0.0 && progressPercent <= 1.0, 'Progress percentage must be between 0.0 and 1.0');
+    assert(
+      progressPercent >= 0.0 && progressPercent <= 1.0,
+      'Progress percentage must be between 0.0 and 1.0',
+    );
     checkEpubLoaded();
-    webViewController?.evaluateJavascript(source: 'toProgress($progressPercent)');
+    webViewController?.evaluateJavascript(
+      source: 'toProgress($progressPercent)',
+    );
   }
 
   ///Moves to the first page of the epub
@@ -254,7 +282,9 @@ class EpubController {
 
   checkEpubLoaded() {
     if (webViewController == null) {
-      throw Exception("Epub viewer is not loaded, wait for onEpubLoaded callback");
+      throw Exception(
+        "Epub viewer is not loaded, wait for onEpubLoaded callback",
+      );
     }
   }
 }

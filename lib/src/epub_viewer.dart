@@ -19,7 +19,13 @@ import 'utils.dart';
 /// * [cfiRange] - The EPUB CFI (Canonical Fragment Identifier) range for the selection
 /// * [selectionRect] - The bounding rectangle of the selected text (WebView-relative)
 /// * [viewRect] - The bounding rectangle of the entire WebView
-typedef EpubSelectionCallback = void Function(String selectedText, String cfiRange, Rect selectionRect, Rect viewRect);
+typedef EpubSelectionCallback =
+    void Function(
+      String selectedText,
+      String cfiRange,
+      Rect selectionRect,
+      Rect viewRect,
+    );
 
 class EpubViewer extends StatefulWidget {
   const EpubViewer({
@@ -90,7 +96,8 @@ class EpubViewer extends StatefulWidget {
 
   ///Callback for handling annotation click (Highlight and Underline)
   ///Provides the CFI range and the selection rect (same format as onSelection)
-  final void Function(String cfiRange, Map<String, dynamic>? rect)? onAnnotationClicked;
+  final void Function(String cfiRange, Map<String, dynamic>? rect)?
+  onAnnotationClicked;
 
   /// Context menu for text selection.
   /// If null, the default context menu will be used.
@@ -196,7 +203,8 @@ class EpubViewer extends StatefulWidget {
 class _EpubViewerState extends State<EpubViewer> {
   final GlobalKey webViewKey = GlobalKey();
 
-  Timer? _selectionCheckTimer; // Timer to periodically verify selection still exists
+  Timer?
+  _selectionCheckTimer; // Timer to periodically verify selection still exists
 
   InAppWebViewController? webViewController;
 
@@ -226,10 +234,16 @@ class _EpubViewerState extends State<EpubViewer> {
     // Use CSS touch-action to block horizontal panning/swiping when selection exists
     // This works at the browser level, before JavaScript event handlers
     // We apply it to the parent document and iframe elements (not sandboxed contents)
-    webViewController?.evaluateJavascript(source: 'blockGesturesWhenSelected(${block ? 'true' : 'false'})');
+    webViewController?.evaluateJavascript(
+      source: 'blockGesturesWhenSelected(${block ? 'true' : 'false'})',
+    );
   }
 
-  void _handleSelection({required Map<String, dynamic>? rect, required String selectedText, required String cfi}) {
+  void _handleSelection({
+    required Map<String, dynamic>? rect,
+    required String selectedText,
+    required String cfi,
+  }) {
     if (!mounted) return;
 
     try {
@@ -238,7 +252,9 @@ class _EpubViewerState extends State<EpubViewer> {
 
       if (rect == null) {
         // Still call onTextSelected for basic selection functionality
-        widget.onTextSelected?.call(EpubTextSelection(selectedText: selectedText, selectionCfi: cfi));
+        widget.onTextSelected?.call(
+          EpubTextSelection(selectedText: selectedText, selectionCfi: cfi),
+        );
         return;
       }
 
@@ -256,7 +272,12 @@ class _EpubViewerState extends State<EpubViewer> {
       );
 
       // Create viewRect in WebView-relative coordinates
-      final viewRect = Rect.fromLTWH(0, 0, webViewSize.width, webViewSize.height);
+      final viewRect = Rect.fromLTWH(
+        0,
+        0,
+        webViewSize.width,
+        webViewSize.height,
+      );
 
       // Provide WebView-relative coordinates (not screen coordinates)
       widget.onSelection?.call(
@@ -324,12 +345,20 @@ class _EpubViewerState extends State<EpubViewer> {
 
         // Always call basic text selection callback
         widget.onTextSelected?.call(
-          EpubTextSelection(selectedText: selectedText, selectionCfi: cfiString, selectionXpath: selectionXpath),
+          EpubTextSelection(
+            selectedText: selectedText,
+            selectionCfi: cfiString,
+            selectionXpath: selectionXpath,
+          ),
         );
 
         // If we have coordinates and a selection callback, provide full selection info
         if (rect != null && widget.onSelection != null) {
-          _handleSelection(rect: rect, selectedText: selectedText, cfi: cfiString);
+          _handleSelection(
+            rect: rect,
+            selectedText: selectedText,
+            cfi: cfiString,
+          );
         }
       },
     );
@@ -393,7 +422,9 @@ class _EpubViewerState extends State<EpubViewer> {
       callback: (data) async {
         var searchResult = data[0];
         widget.epubController.searchResultCompleter.complete(
-          List<EpubSearchResult>.from(searchResult.map((e) => EpubSearchResult.fromJson(e))),
+          List<EpubSearchResult>.from(
+            searchResult.map((e) => EpubSearchResult.fromJson(e)),
+          ),
         );
       },
     );
@@ -483,7 +514,9 @@ class _EpubViewerState extends State<EpubViewer> {
           }
           xpathRange = null;
         }
-        widget.epubController.completePageText(EpubTextExtractRes(text: text, cfiRange: cfi, xpathRange: xpathRange));
+        widget.epubController.completePageText(
+          EpubTextExtractRes(text: text, cfiRange: cfi, xpathRange: xpathRange),
+        );
       },
     );
 
@@ -520,12 +553,19 @@ class _EpubViewerState extends State<EpubViewer> {
     bool allowScripted = displaySettings.allowScriptedContent;
     String cfi = widget.initialCfi ?? "";
     String? initialXPath = widget.initialXPath;
-    String direction = widget.displaySettings?.defaultDirection.name ?? EpubDefaultDirection.ltr.name;
+    String direction =
+        widget.displaySettings?.defaultDirection.name ??
+        EpubDefaultDirection.ltr.name;
     int fontSize = displaySettings.fontSize;
 
-    bool useCustomSwipe = Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
+    bool useCustomSwipe =
+        Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
-    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor?.toHex();
+    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor
+        ?.toHex();
+    String customCss = widget.displaySettings?.theme?.customCss != null
+        ? Utils.encodeMap(widget.displaySettings!.theme!.customCss!)
+        : "null";
 
     bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
 
@@ -533,7 +573,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
     webViewController?.evaluateJavascript(
       source:
-          'loadBook([${data.join(',')}], "$cfi", $xpathParam, "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange, ${widget.selectAnnotationRange})',
+          'loadBook([${data.join(',')}], "$cfi", $xpathParam, "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange, ${widget.selectAnnotationRange}, $customCss)',
     );
   }
 
@@ -543,11 +583,18 @@ class _EpubViewerState extends State<EpubViewer> {
       decoration: widget.displaySettings?.theme?.backgroundDecoration,
       child: InAppWebView(
         contextMenu: widget.suppressNativeContextMenu
-            ? ContextMenu(menuItems: [], settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true))
+            ? ContextMenu(
+                menuItems: [],
+                settings: ContextMenuSettings(
+                  hideDefaultSystemContextMenuItems: true,
+                ),
+              )
             : widget.selectionContextMenu,
         key: webViewKey,
-        initialFile: 'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-        initialSettings: settings..disableVerticalScroll = widget.displaySettings?.snap ?? false,
+        initialFile:
+            'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+        initialSettings: settings
+          ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
         onWebViewCreated: (controller) async {
           webViewController = controller;
           widget.epubController.setWebViewController(controller);
@@ -555,7 +602,10 @@ class _EpubViewerState extends State<EpubViewer> {
         },
         onLoadStart: (controller, url) {},
         onPermissionRequest: (controller, request) async {
-          return PermissionResponse(resources: request.resources, action: PermissionResponseAction.GRANT);
+          return PermissionResponse(
+            resources: request.resources,
+            action: PermissionResponseAction.GRANT,
+          );
         },
         shouldOverrideUrlLoading: (controller, navigationAction) async {
           return NavigationActionPolicy.ALLOW;
@@ -574,7 +624,9 @@ class _EpubViewerState extends State<EpubViewer> {
           // Trigger JavaScript to check for selection after a delay
           // Also set up periodic checking for selection changes (when handles are dragged)
           Future.delayed(const Duration(milliseconds: 300), () {
-            controller.evaluateJavascript(source: 'checkSelectionAfterLongPress()');
+            controller.evaluateJavascript(
+              source: 'checkSelectionAfterLongPress()',
+            );
 
             // Set up periodic checking for selection changes (when handles are dragged)
             // Check every 150ms for up to 10 seconds after long press
@@ -587,14 +639,20 @@ class _EpubViewerState extends State<EpubViewer> {
                 return;
               }
 
-              controller.evaluateJavascript(source: 'checkSelectionPeriodically()');
+              controller.evaluateJavascript(
+                source: 'checkSelectionPeriodically()',
+              );
             });
           });
         },
         gestureRecognizers: {
-          Factory<VerticalDragGestureRecognizer>(() => VerticalDragGestureRecognizer()),
+          Factory<VerticalDragGestureRecognizer>(
+            () => VerticalDragGestureRecognizer(),
+          ),
           Factory<LongPressGestureRecognizer>(
-            () => LongPressGestureRecognizer(duration: const Duration(milliseconds: 30)),
+            () => LongPressGestureRecognizer(
+              duration: const Duration(milliseconds: 30),
+            ),
           ),
         },
       ),
@@ -605,20 +663,24 @@ class _EpubViewerState extends State<EpubViewer> {
   void _startSelectionMonitoring() {
     _stopSelectionMonitoring(); // Stop any existing timer
 
-    _selectionCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+    _selectionCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (
+      timer,
+    ) {
       if (!mounted || webViewController == null) {
         timer.cancel();
         return;
       }
 
       // Check if selection still exists and re-apply blocking if needed
-      webViewController?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()').then((result) {
-        // If selection no longer exists, stop monitoring
-        if (result == 'no-selection') {
-          _stopSelectionMonitoring();
-          _blockGesturesWhenSelected(false);
-        }
-      });
+      webViewController
+          ?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()')
+          .then((result) {
+            // If selection no longer exists, stop monitoring
+            if (result == 'no-selection') {
+              _stopSelectionMonitoring();
+              _blockGesturesWhenSelected(false);
+            }
+          });
     });
   }
 
