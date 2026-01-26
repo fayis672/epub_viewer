@@ -1,10 +1,10 @@
 name: flutter_epub_viewer
 description: "A Flutter package for viewing Epub documents developed by combining the power of Epubjs and flutter_inappwebview"
-version: 1.2.6
+version: 1.2.7
 homepage: https://github.com/fayis672/epub_viewer
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: ">=3.8.0 <4.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
@@ -17,8 +17,7 @@ dependencies:
 platforms:
   android:
   ios:
-  
-  
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -31,12 +30,10 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # To add assets to your package, add an assets section, like this:
   assets:
     - lib/assets/webpage/dist/
     - lib/assets/webpage/html/
-
 
   #
   # For details regarding assets in packages, see

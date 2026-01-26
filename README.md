@@ -141,6 +141,29 @@ epubController.removeHighlight(cfi: cfiString); // Remove highlight
 epubController.addUnderline(cfi: cfiString); // Add underline
 epubController.removeUnderline(cfi: cfiString); // Remove underline
 
+// Custom Theme
+EpubTheme.custom(
+  customCss: {
+    'p': {
+      'font-family': 'Roboto, sans-serif',
+      'font-size': '18px',
+      'line-height': '1.5',
+      'color': '#333333',
+    },
+    'h1': {
+       'color': 'blue'
+    },
+    "a": {
+      "color": "inherit !important",
+      "-webkit-text-fill-color": "red !important"
+    },
+    "a:link": {
+      "color": "inherit !important",
+      "-webkit-text-fill-color": "red !important"
+    },
+  },
+);
+
 // Selection
 epubController.clearSelection(); // Clear active selection
 epubController.extractText(startCfi: start, endCfi: end); // Extract text from range
