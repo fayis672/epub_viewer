@@ -45,18 +45,28 @@ class EpubController {
     webViewController?.evaluateJavascript(source: 'previous()');
   }
 
+  Completer<EpubLocation>? _currentLocationCompleter;
+
+  void completeCurrentLocation(EpubLocation location) {
+    if (_currentLocationCompleter != null && !_currentLocationCompleter!.isCompleted) {
+      _currentLocationCompleter!.complete(location);
+    }
+  }
+
   ///Returns current location of epub viewer
   Future<EpubLocation> getCurrentLocation() async {
     checkEpubLoaded();
-    final result = await webViewController?.evaluateJavascript(
-      source: 'getCurrentLocation()',
-    );
 
-    if (result == null) {
-      throw Exception("Epub locations not loaded");
+    if (_currentLocationCompleter != null && !_currentLocationCompleter!.isCompleted) {
+      try {
+        _currentLocationCompleter!.completeError('Cancelled by new request');
+      } catch (e) {
+        // Ignore if already completed
+      }
     }
-
-    return EpubLocation.fromJson(result);
+    _currentLocationCompleter = Completer<EpubLocation>();
+    webViewController?.evaluateJavascript(source: 'getCurrentLocation()');
+    return _currentLocationCompleter!.future;
   }
 
   ///Returns list of [EpubChapter] from epub,
