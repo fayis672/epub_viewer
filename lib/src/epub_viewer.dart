@@ -521,6 +521,18 @@ class _EpubViewerState extends State<EpubViewer> {
     );
 
     webViewController?.addJavaScriptHandler(
+      handlerName: "currentLocation",
+      callback: (data) {
+        widget.epubController.completeCurrentLocation(EpubLocation.fromJson(data[0]));
+      },
+    );    webViewController?.addJavaScriptHandler(
+      handlerName: "currentLocation",
+      callback: (data) {
+        widget.epubController.completeCurrentLocation(EpubLocation.fromJson(data[0]));
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
       handlerName: "cfiRect",
       callback: (data) {
         try {
