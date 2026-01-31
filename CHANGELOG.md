@@ -1,3 +1,6 @@
+## 1.2.8
+- Fixed `getCurrentLocation` function
+
 ## 1.2.7
 - Added `customCss` support in `EpubTheme` for granular styling
 
