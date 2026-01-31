@@ -541,6 +541,31 @@ class _EpubViewerState extends State<EpubViewer> {
         }
       },
     );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: "currentLocation",
+      callback: (data) {
+        try {
+          if (data.isNotEmpty && data[0] != null) {
+            final locationData = data[0] as Map<String, dynamic>;
+            final location = EpubLocation(
+              startCfi: locationData['startCfi'],
+              endCfi: locationData['endCfi'],
+              startXpath: locationData['startXpath'],
+              endXpath: locationData['endXpath'],
+              progress: (locationData['progress'] as num).toDouble(),
+            );
+            widget.epubController.currentLocationCompleter.complete(location);
+          } else {
+            widget.epubController.currentLocationCompleter.completeError(
+              Exception('Invalid location data'),
+            );
+          }
+        } catch (e) {
+          widget.epubController.currentLocationCompleter.completeError(e);
+        }
+      },
+    );
   }
 
   Future<void> loadBook() async {
