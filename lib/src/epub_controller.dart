@@ -45,18 +45,15 @@ class EpubController {
     webViewController?.evaluateJavascript(source: 'previous()');
   }
 
+   Completer<EpubLocation> currentLocationCompleter =
+      Completer<EpubLocation>();
+
   ///Returns current location of epub viewer
   Future<EpubLocation> getCurrentLocation() async {
     checkEpubLoaded();
-    final result = await webViewController?.evaluateJavascript(
-      source: 'getCurrentLocation()',
-    );
-
-    if (result == null) {
-      throw Exception("Epub locations not loaded");
-    }
-
-    return EpubLocation.fromJson(result);
+    currentLocationCompleter = Completer<EpubLocation>();
+    webViewController?.evaluateJavascript(source: 'getCurrentLocation()');
+    return await currentLocationCompleter.future;
   }
 
   ///Returns list of [EpubChapter] from epub,
@@ -289,18 +286,4 @@ class EpubController {
   }
 }
 
-class LocalServerController {
-  final InAppLocalhostServer _localhostServer = InAppLocalhostServer(
-    documentRoot: 'packages/flutter_epub_viewer/lib/assets/webpage',
-  );
 
-  Future<void> initServer() async {
-    if (_localhostServer.isRunning()) return;
-    await _localhostServer.start();
-  }
-
-  Future<void> disposeServer() async {
-    if (!_localhostServer.isRunning()) return;
-    await _localhostServer.close();
-  }
-}
