@@ -17,7 +17,12 @@ class EpubDisplaySettings {
   /// Default reading direction
   EpubDefaultDirection defaultDirection;
 
-  /// Allow or disallow scripted content
+  /// Allow or disallow scripts embedded in the EPUB content to run.
+  ///
+  /// Defaults to `false`. **Keep it `false` for untrusted EPUBs.** When `true`,
+  /// scripts inside the book execute in the rendering context — and on the web
+  /// that context is a same-origin iframe, so a malicious book could reach the
+  /// host page. Only enable it for content you trust.
   bool allowScriptedContent;
 
   /// Manager type

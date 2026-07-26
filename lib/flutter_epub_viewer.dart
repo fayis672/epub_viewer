@@ -10,6 +10,5 @@ export 'src/models/epub_source.dart';
 export 'src/models/epub_text_extract_res.dart';
 export 'src/models/epub_text_selection.dart';
 export 'src/models/epub_theme.dart';
+export 'src/models/epub_context_menu.dart';
 export 'src/epub_metadata.dart';
-export 'package:flutter_inappwebview/flutter_inappwebview.dart'
-    show ContextMenu, ContextMenuSettings, ContextMenuItem;

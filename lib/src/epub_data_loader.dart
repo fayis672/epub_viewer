@@ -1,22 +1,24 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+
+import 'io/file_loader.dart';
 
 /// Abstract interface for loading epub data
 abstract class EpubDataLoader {
   Future<Uint8List> loadData();
 }
 
-/// File system epub loader implementation
+/// File system epub loader implementation.
+///
+/// Not supported on the web (see [readEpubFileBytes]).
 class FileEpubLoader implements EpubDataLoader {
   final File file;
-  
+
   FileEpubLoader(this.file);
-  
+
   @override
   Future<Uint8List> loadData() {
-    return file.readAsBytes();
+    return readEpubFileBytes(file);
   }
 }
 
@@ -24,9 +26,9 @@ class FileEpubLoader implements EpubDataLoader {
 class UrlEpubLoader implements EpubDataLoader {
   final String url;
   final Map<String, String>? headers;
-  
+
   UrlEpubLoader(this.url, {this.headers});
-  
+
   @override
   Future<Uint8List> loadData() async {
     try {
@@ -46,12 +48,22 @@ class UrlEpubLoader implements EpubDataLoader {
 /// Asset epub loader implementation
 class AssetEpubLoader implements EpubDataLoader {
   final String assetPath;
-  
+
   AssetEpubLoader(this.assetPath);
-  
+
   @override
   Future<Uint8List> loadData() async {
     final byteData = await rootBundle.load(assetPath);
     return byteData.buffer.asUint8List();
   }
+}
+
+/// In-memory epub loader implementation (bytes already available).
+class DataEpubLoader implements EpubDataLoader {
+  final Uint8List data;
+
+  DataEpubLoader(this.data);
+
+  @override
+  Future<Uint8List> loadData() async => data;
 }

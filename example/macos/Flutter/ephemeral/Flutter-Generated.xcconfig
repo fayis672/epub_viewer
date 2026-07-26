@@ -2,10 +2,12 @@
 FLUTTER_ROOT=/Users/fayismuhammed/flutter
 FLUTTER_APPLICATION_PATH=/Users/fayismuhammed/Projects/Flutter /epub_viewer/example
 COCOAPODS_PARALLEL_CODE_SIGN=true
+FLUTTER_TARGET=/Users/fayismuhammed/Projects/Flutter /epub_viewer/example/lib/main.dart
 FLUTTER_BUILD_DIR=build
 FLUTTER_BUILD_NAME=1.0.0
 FLUTTER_BUILD_NUMBER=1
+DART_DEFINES=RkxVVFRFUl9WRVJTSU9OPTMuMzUuNw==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049YWRjOTAxMDYyNQ==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049MDM1MzE2NTY1YQ==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My45LjI=
 DART_OBFUSCATION=false
 TRACK_WIDGET_CREATION=true
 TREE_SHAKE_ICONS=false
-PACKAGE_CONFIG=.dart_tool/package_config.json
+PACKAGE_CONFIG=/Users/fayismuhammed/Projects/Flutter /epub_viewer/example/.dart_tool/package_config.json
