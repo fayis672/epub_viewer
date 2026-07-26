@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../flutter_epub_viewer.dart';
+import 'platform/epub_web_view.dart';
 import 'utils.dart';
 
 /// Callback for text selection events with WebView-relative coordinates.
@@ -101,7 +99,8 @@ class EpubViewer extends StatefulWidget {
 
   /// Context menu for text selection.
   /// If null, the default context menu will be used.
-  final ContextMenu? selectionContextMenu;
+  /// Applies to mobile/desktop only; ignored on the web.
+  final EpubContextMenu? selectionContextMenu;
 
   /// Whether to suppress the native context menu entirely.
   /// When true, no native context menu will be shown on text selection.
@@ -201,31 +200,10 @@ class EpubViewer extends StatefulWidget {
 }
 
 class _EpubViewerState extends State<EpubViewer> {
-  final GlobalKey webViewKey = GlobalKey();
-
   Timer?
   _selectionCheckTimer; // Timer to periodically verify selection still exists
 
-  InAppWebViewController? webViewController;
-
-  InAppWebViewSettings settings = InAppWebViewSettings(
-    isInspectable: kDebugMode,
-    javaScriptEnabled: true,
-    mediaPlaybackRequiresUserGesture: false,
-    transparentBackground: true,
-    supportZoom: false,
-    allowsInlineMediaPlayback: true,
-    disableLongPressContextMenuOnLinks: false,
-    iframeAllowFullscreen: true,
-    allowsLinkPreview: false,
-    verticalScrollBarEnabled: false,
-    selectionGranularity: SelectionGranularity.CHARACTER,
-  );
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  EpubWebViewController? webViewController;
 
   /// Block or unblock gestures using CSS touch-action when selection is active
   void _blockGesturesWhenSelected(bool block) {
@@ -233,10 +211,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
     // Use CSS touch-action to block horizontal panning/swiping when selection exists
     // This works at the browser level, before JavaScript event handlers
-    // We apply it to the parent document and iframe elements (not sandboxed contents)
-    webViewController?.evaluateJavascript(
-      source: 'blockGesturesWhenSelected(${block ? 'true' : 'false'})',
-    );
+    webViewController?.callMethod('blockGesturesWhenSelected', [block]);
   }
 
   void _handleSelection({
@@ -294,391 +269,259 @@ class _EpubViewerState extends State<EpubViewer> {
   }
 
   void addJavaScriptHandlers() {
-    webViewController?.addJavaScriptHandler(
-      handlerName: "displayed",
-      callback: (data) {
-        widget.onEpubLoaded?.call();
-      },
-    );
+    final controller = webViewController;
+    if (controller == null) return;
 
-    webViewController?.addJavaScriptHandler(
-      handlerName: "chapters",
-      callback: (data) async {
-        final chapters = await widget.epubController.parseChapters();
-        widget.onChaptersLoaded?.call(chapters);
-      },
-    );
+    controller.addHandler("displayed", (data) {
+      if (kDebugMode) {
+        debugPrint("[EpubViewer] 6. 'displayed' JS handler received");
+      }
+      widget.onEpubLoaded?.call();
+    });
 
-    webViewController?.addJavaScriptHandler(
-      handlerName: "selection",
-      callback: (data) {
-        final cfiString = data[0] as String;
-        final selectedText = data[1] as String;
-        Map<String, dynamic>? rect;
-        String? selectionXpath;
+    controller.addHandler("chapters", (data) async {
+      if (kDebugMode) {
+        debugPrint("[EpubViewer] 7. 'chapters' JS handler received, parsing chapters...");
+      }
+      final chapters = await widget.epubController.parseChapters();
+      if (kDebugMode) {
+        debugPrint("[EpubViewer] 8. Chapters parsed (${chapters.length} chapters found)");
+      }
+      widget.onChaptersLoaded?.call(chapters);
+    });
 
-        try {
-          if (data.length > 2 && data[2] != null) {
-            rect = Map<String, dynamic>.from(data[2] as Map);
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error parsing selection rect: $e');
-          }
-          rect = null;
+    controller.addHandler("selection", (data) {
+      final cfiString = data[0] as String;
+      final selectedText = data[1] as String;
+      Map<String, dynamic>? rect;
+      String? selectionXpath;
+
+      try {
+        if (data.length > 2 && data[2] != null) {
+          rect = Map<String, dynamic>.from(data[2] as Map);
         }
-
-        try {
-          if (data.length > 3 && data[3] != null) {
-            selectionXpath = data[3] as String?;
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error parsing selection xpath: $e');
-          }
-          selectionXpath = null;
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error parsing selection rect: $e');
         }
+        rect = null;
+      }
 
-        // Block gestures when selection is active
-        _blockGesturesWhenSelected(true);
-        _startSelectionMonitoring();
-
-        // Always call basic text selection callback
-        widget.onTextSelected?.call(
-          EpubTextSelection(
-            selectedText: selectedText,
-            selectionCfi: cfiString,
-            selectionXpath: selectionXpath,
-          ),
-        );
-
-        // If we have coordinates and a selection callback, provide full selection info
-        if (rect != null && widget.onSelection != null) {
-          _handleSelection(
-            rect: rect,
-            selectedText: selectedText,
-            cfi: cfiString,
-          );
+      try {
+        if (data.length > 3 && data[3] != null) {
+          selectionXpath = data[3] as String?;
         }
-      },
-    );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error parsing selection xpath: $e');
+        }
+        selectionXpath = null;
+      }
+
+      // Block gestures when selection is active
+      _blockGesturesWhenSelected(true);
+      _startSelectionMonitoring();
+
+      // Always call basic text selection callback
+      widget.onTextSelected?.call(
+        EpubTextSelection(
+          selectedText: selectedText,
+          selectionCfi: cfiString,
+          selectionXpath: selectionXpath,
+        ),
+      );
+
+      // If we have coordinates and a selection callback, provide full selection info
+      if (rect != null && widget.onSelection != null) {
+        _handleSelection(rect: rect, selectedText: selectedText, cfi: cfiString);
+      }
+    });
 
     // Add deselection handler
-    webViewController?.addJavaScriptHandler(
-      handlerName: 'selectionCleared',
-      callback: (args) {
-        _stopSelectionMonitoring();
-        _blockGesturesWhenSelected(false);
-        widget.onDeselection?.call();
-      },
-    );
+    controller.addHandler('selectionCleared', (args) {
+      _stopSelectionMonitoring();
+      _blockGesturesWhenSelected(false);
+      widget.onDeselection?.call();
+    });
 
     // Add selection changing handler (dragging handles)
-    webViewController?.addJavaScriptHandler(
-      handlerName: 'selectionChanging',
-      callback: (args) {
-        widget.onSelectionChanging?.call();
-      },
-    );
+    controller.addHandler('selectionChanging', (args) {
+      widget.onSelectionChanging?.call();
+    });
 
     // Add touch down handler
-    webViewController?.addJavaScriptHandler(
-      handlerName: 'onTouchDown',
-      callback: (data) {
-        try {
-          if (data.length >= 2) {
-            final x = (data[0] as num).toDouble();
-            final y = (data[1] as num).toDouble();
-            widget.onTouchDown?.call(x, y);
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error parsing onTouchDown coordinates: $e');
-          }
+    controller.addHandler('onTouchDown', (data) {
+      try {
+        if (data.length >= 2) {
+          final x = (data[0] as num).toDouble();
+          final y = (data[1] as num).toDouble();
+          widget.onTouchDown?.call(x, y);
         }
-      },
-    );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error parsing onTouchDown coordinates: $e');
+        }
+      }
+    });
 
     // Add touch up handler
-    webViewController?.addJavaScriptHandler(
-      handlerName: 'onTouchUp',
-      callback: (data) {
+    controller.addHandler('onTouchUp', (data) {
+      try {
+        if (data.length >= 2) {
+          final x = (data[0] as num).toDouble();
+          final y = (data[1] as num).toDouble();
+          widget.onTouchUp?.call(x, y);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error parsing onTouchUp coordinates: $e');
+        }
+      }
+    });
+
+    controller.addHandler("relocated", (data) {
+      var location = data[0];
+      widget.onRelocated
+          ?.call(EpubLocation.fromJson(Utils.asStringMap(location)));
+    });
+
+    controller.addHandler('locationLoaded', (arguments) {
+      widget.onLocationLoaded?.call();
+    });
+
+    controller.addHandler('initialPositionLoading', (data) {
+      String type = 'cfi';
+      if (data.isNotEmpty) {
         try {
-          if (data.length >= 2) {
-            final x = (data[0] as num).toDouble();
-            final y = (data[1] as num).toDouble();
-            widget.onTouchUp?.call(x, y);
+          if (data[0] is Map) {
+            type = (data[0] as Map)['type'] ?? 'cfi';
+          } else if (data[0] is String) {
+            type = data[0] as String;
           }
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('Error parsing onTouchUp coordinates: $e');
+            debugPrint('Error parsing initialPositionLoading type: $e');
           }
         }
-      },
-    );
+      }
+      widget.onInitialPositionLoading?.call(type);
+    });
 
-    webViewController?.addJavaScriptHandler(
-      handlerName: "search",
-      callback: (data) async {
-        var searchResult = data[0];
-        widget.epubController.searchResultCompleter.complete(
-          List<EpubSearchResult>.from(
-            searchResult.map((e) => EpubSearchResult.fromJson(e)),
-          ),
-        );
-      },
-    );
+    controller.addHandler('initialPositionLoaded', (arguments) {
+      widget.onInitialPositionLoaded?.call();
+    });
 
-    webViewController?.addJavaScriptHandler(
-      handlerName: "relocated",
-      callback: (data) {
-        var location = data[0];
-        widget.onRelocated?.call(EpubLocation.fromJson(location));
-      },
-    );
+    controller.addHandler("readyToLoad", (data) {
+      if (kDebugMode) {
+        debugPrint("[EpubViewer] 4. 'readyToLoad' JS handler received in Dart");
+      }
+      loadBook();
+    });
 
-    webViewController?.addJavaScriptHandler(
-      handlerName: 'locationLoaded',
-      callback: (arguments) {
-        widget.onLocationLoaded?.call();
-      },
-    );
-
-    webViewController?.addJavaScriptHandler(
-      handlerName: 'initialPositionLoading',
-      callback: (data) {
-        String type = 'cfi';
-        if (data.isNotEmpty) {
-          try {
-            if (data[0] is Map) {
-              type = (data[0] as Map)['type'] ?? 'cfi';
-            } else if (data[0] is String) {
-              type = data[0] as String;
-            }
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint('Error parsing initialPositionLoading type: $e');
-            }
-          }
+    controller.addHandler("markClicked", (data) {
+      String cfi = data[0];
+      Map<String, dynamic>? rect;
+      try {
+        if (data.length > 1 && data[1] != null) {
+          rect = Map<String, dynamic>.from(data[1] as Map);
         }
-        widget.onInitialPositionLoading?.call(type);
-      },
-    );
-
-    webViewController?.addJavaScriptHandler(
-      handlerName: 'initialPositionLoaded',
-      callback: (arguments) {
-        widget.onInitialPositionLoaded?.call();
-      },
-    );
-
-    webViewController?.addJavaScriptHandler(
-      handlerName: "readyToLoad",
-      callback: (data) {
-        loadBook();
-      },
-    );
-
-    webViewController?.addJavaScriptHandler(
-      handlerName: "markClicked",
-      callback: (data) {
-        String cfi = data[0];
-        Map<String, dynamic>? rect;
-        try {
-          if (data.length > 1 && data[1] != null) {
-            rect = Map<String, dynamic>.from(data[1] as Map);
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error parsing annotation rect: $e');
-          }
-          rect = null;
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error parsing annotation rect: $e');
         }
-        widget.onAnnotationClicked?.call(cfi, rect);
-      },
-    );
+        rect = null;
+      }
+      widget.onAnnotationClicked?.call(cfi, rect);
+    });
 
-    webViewController?.addJavaScriptHandler(
-      handlerName: "epubText",
-      callback: (data) {
-        var text = data[0].trim();
-        var cfi = data[1];
-        String? xpathRange;
-        try {
-          if (data.length > 2 && data[2] != null) {
-            xpathRange = data[2] as String?;
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error parsing xpathRange: $e');
-          }
-          xpathRange = null;
-        }
-        widget.epubController.completePageText(
-          EpubTextExtractRes(text: text, cfiRange: cfi, xpathRange: xpathRange),
-        );
-      },
-    );
-
-    webViewController?.addJavaScriptHandler(
-      handlerName: "cfiRect",
-      callback: (data) {
-        try {
-          if (data.isNotEmpty && data[0] != null) {
-            final rectData = data[0] as Map<String, dynamic>;
-            final rect = Rect.fromLTRB(
-              (rectData['left'] as num).toDouble(),
-              (rectData['top'] as num).toDouble(),
-              (rectData['right'] as num).toDouble(),
-              (rectData['bottom'] as num).toDouble(),
-            );
-            widget.epubController.cfiRectCompleter.complete(rect);
-          } else {
-            widget.epubController.cfiRectCompleter.complete(null);
-          }
-        } catch (e) {
-          widget.epubController.cfiRectCompleter.completeError(e);
-        }
-      },
-    );
-
-    webViewController?.addJavaScriptHandler(
-      handlerName: "currentLocation",
-      callback: (data) {
-        try {
-          if (data.isNotEmpty && data[0] != null) {
-            final locationData = data[0] as Map<String, dynamic>;
-            final location = EpubLocation(
-              startCfi: locationData['startCfi'],
-              endCfi: locationData['endCfi'],
-              startXpath: locationData['startXpath'],
-              endXpath: locationData['endXpath'],
-              progress: (locationData['progress'] as num).toDouble(),
-            );
-            widget.epubController.currentLocationCompleter.complete(location);
-          } else {
-            widget.epubController.currentLocationCompleter.completeError(
-              Exception('Invalid location data'),
-            );
-          }
-        } catch (e) {
-          widget.epubController.currentLocationCompleter.completeError(e);
-        }
-      },
-    );
+    // Note: request/response calls (getCurrentLocation, search, extractText,
+    // getRectFromCfi, ...) now return their values directly via
+    // [EpubWebViewController.callAsync] and no longer need handler channels.
   }
 
   Future<void> loadBook() async {
-    var data = await widget.epubSource.epubData;
+    if (kDebugMode) {
+      debugPrint("[EpubViewer] 5. loadBook() called");
+    }
+    final controller = webViewController;
+    if (controller == null) {
+      if (kDebugMode) {
+        debugPrint("[EpubViewer] ERROR: loadBook() webViewController is null!");
+      }
+      return;
+    }
+
+    final data = await widget.epubSource.epubData;
     final displaySettings = widget.displaySettings ?? EpubDisplaySettings();
-    String manager = displaySettings.manager.name;
-    String flow = displaySettings.flow.name;
-    String spread = displaySettings.spread.name;
-    bool snap = displaySettings.snap;
-    bool allowScripted = displaySettings.allowScriptedContent;
-    String cfi = widget.initialCfi ?? "";
-    String? initialXPath = widget.initialXPath;
-    String direction =
+    final String manager = displaySettings.manager.name;
+    final String flow = displaySettings.flow.name;
+    final String spread = displaySettings.spread.name;
+    final bool snap = displaySettings.snap;
+    final bool allowScripted = displaySettings.allowScriptedContent;
+    final String cfi = widget.initialCfi ?? "";
+    final String? initialXPath = widget.initialXPath;
+    final String direction =
         widget.displaySettings?.defaultDirection.name ??
         EpubDefaultDirection.ltr.name;
-    int fontSize = displaySettings.fontSize;
+    final int fontSize = displaySettings.fontSize;
 
-    bool useCustomSwipe =
-        Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
+    // Custom swipe handling only applies to Android (native snap is used elsewhere).
+    final bool useCustomSwipe =
+        defaultTargetPlatform == TargetPlatform.android &&
+        !displaySettings.useSnapAnimationAndroid;
 
-    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor
+    final String? foregroundColor = widget
+        .displaySettings
+        ?.theme
+        ?.foregroundColor
         ?.toHex();
-    String customCss = widget.displaySettings?.theme?.customCss != null
-        ? Utils.encodeMap(widget.displaySettings!.theme!.customCss!)
-        : "null";
+    final Map<String, dynamic>? customCss =
+        widget.displaySettings?.theme?.customCss;
 
-    bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
+    final bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
 
-    String xpathParam = initialXPath != null ? '"$initialXPath"' : 'null';
+    // The iOS/iPad selection-polling fallbacks are only needed on mobile;
+    // browsers (and desktop) fire `selectionchange` reliably, so we disable
+    // polling there to avoid perpetual background CPU/battery cost.
+    final bool usePolling = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
 
-    webViewController?.evaluateJavascript(
-      source:
-          'loadBook([${data.join(',')}], "$cfi", $xpathParam, "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange, ${widget.selectAnnotationRange}, $customCss)',
-    );
+    controller.callMethod('loadBook', [
+      data,
+      <String, dynamic>{
+        'cfi': cfi,
+        'initialXPath': initialXPath,
+        'manager': manager,
+        'flow': flow,
+        'spread': spread,
+        'snap': snap,
+        'allowScriptedContent': allowScripted,
+        'direction': direction,
+        'useCustomSwipe': useCustomSwipe,
+        'backgroundColor': null,
+        'foregroundColor': foregroundColor,
+        'fontSize': fontSize,
+        'clearSelectionOnPageChange': clearSelectionOnPageChange,
+        'selectAnnotationRange': widget.selectAnnotationRange,
+        'customCss': customCss,
+        'usePolling': usePolling,
+      },
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: widget.displaySettings?.theme?.backgroundDecoration,
-      child: InAppWebView(
-        contextMenu: widget.suppressNativeContextMenu
-            ? ContextMenu(
-                menuItems: [],
-                settings: ContextMenuSettings(
-                  hideDefaultSystemContextMenuItems: true,
-                ),
-              )
-            : widget.selectionContextMenu,
-        key: webViewKey,
-        initialFile:
-            'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-        initialSettings: settings
-          ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
-        onWebViewCreated: (controller) async {
+    return createEpubPlatformView(
+      EpubPlatformViewConfig(
+        backgroundDecoration: widget.displaySettings?.theme?.backgroundDecoration,
+        contextMenu: widget.selectionContextMenu,
+        suppressNativeContextMenu: widget.suppressNativeContextMenu,
+        disableVerticalScroll: widget.displaySettings?.snap ?? false,
+        onControllerCreated: (controller) {
           webViewController = controller;
           widget.epubController.setWebViewController(controller);
           addJavaScriptHandlers();
-        },
-        onLoadStart: (controller, url) {},
-        onPermissionRequest: (controller, request) async {
-          return PermissionResponse(
-            resources: request.resources,
-            action: PermissionResponseAction.GRANT,
-          );
-        },
-        shouldOverrideUrlLoading: (controller, navigationAction) async {
-          return NavigationActionPolicy.ALLOW;
-        },
-        onLoadStop: (controller, url) async {},
-        onReceivedError: (controller, request, error) {},
-        onProgressChanged: (controller, progress) {},
-        onUpdateVisitedHistory: (controller, url, androidIsReload) {},
-        onConsoleMessage: (controller, consoleMessage) {
-          if (kDebugMode) {
-            debugPrint("JS_LOG: ${consoleMessage.message}");
-          }
-        },
-        onLongPressHitTestResult: (controller, hitTestResult) {
-          // On iPad, long press creates selection but events don't fire
-          // Trigger JavaScript to check for selection after a delay
-          // Also set up periodic checking for selection changes (when handles are dragged)
-          Future.delayed(const Duration(milliseconds: 300), () {
-            controller.evaluateJavascript(
-              source: 'checkSelectionAfterLongPress()',
-            );
-
-            // Set up periodic checking for selection changes (when handles are dragged)
-            // Check every 150ms for up to 10 seconds after long press
-            var checkCount = 0;
-            var maxChecks = 67; // 67 * 150ms = ~10 seconds
-            Timer.periodic(const Duration(milliseconds: 150), (timer) {
-              checkCount++;
-              if (checkCount > maxChecks) {
-                timer.cancel();
-                return;
-              }
-
-              controller.evaluateJavascript(
-                source: 'checkSelectionPeriodically()',
-              );
-            });
-          });
-        },
-        gestureRecognizers: {
-          Factory<VerticalDragGestureRecognizer>(
-            () => VerticalDragGestureRecognizer(),
-          ),
-          Factory<LongPressGestureRecognizer>(
-            () => LongPressGestureRecognizer(
-              duration: const Duration(milliseconds: 30),
-            ),
-          ),
         },
       ),
     );
@@ -698,7 +541,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
       // Check if selection still exists and re-apply blocking if needed
       webViewController
-          ?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()')
+          ?.callMethod('checkSelectionAndReapplyBlocking')
           .then((result) {
             // If selection no longer exists, stop monitoring
             if (result == 'no-selection') {
@@ -718,6 +561,7 @@ class _EpubViewerState extends State<EpubViewer> {
   @override
   void dispose() {
     _stopSelectionMonitoring();
+    webViewController?.dispose();
     super.dispose();
   }
 }

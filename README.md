@@ -41,6 +41,58 @@ For more details, refer to this [StackOverflow answer](https://stackoverflow.com
 
 Also, ensure you complete the platform-wise setup for `flutter_inappwebview` as described [here](https://inappwebview.dev/docs/intro).
 
+#### Web
+
+Web is supported out of the box — no extra setup is required. Instead of a webview
+plugin, the viewer renders epub.js inside a native `<iframe>` and communicates with
+it through `dart:js_interop`, so all `EpubController`/`EpubViewer` APIs and callbacks
+behave the same as on mobile.
+
+Notes for web:
+
+- Prefer `EpubSource.fromData(Uint8List)` or `EpubSource.fromAsset(...)`. `EpubSource.fromUrl(...)`
+  works only if the remote server sends permissive CORS headers; `EpubSource.fromFile(...)`
+  is not available (there is no filesystem).
+- The epub `<iframe>` composites above the Flutter scene, so Flutter widgets placed
+  *over* the viewer (a `Drawer`, dialog, or pushed route) may not receive taps. Keep
+  interactive controls outside the viewer's rectangle (e.g. an `AppBar` or a side
+  panel) — see the example app.
+
+#### macOS
+
+macOS uses the same `flutter_inappwebview` (WKWebView) rendering path as iOS, so
+all `EpubController`/`EpubViewer` APIs and callbacks behave the same as on mobile.
+
+- Requires a macOS deployment target of **10.13** or higher (a
+  `flutter_inappwebview` requirement). Set `platform :osx, '10.13'` (or higher) in
+  your app's `macos/Podfile` if it is currently lower.
+- Loading an EPUB from the network (`EpubSource.fromUrl(...)`) or writing
+  highlights/annotations may require the App Sandbox network entitlement. Add
+  `com.apple.security.network.client` to `macos/Runner/*.entitlements` if network
+  loads fail.
+- Complete the macOS setup for `flutter_inappwebview` as described
+  [here](https://inappwebview.dev/docs/intro).
+
+## ⚠️ Migrating from 1.x to 2.0
+
+- The package no longer re-exports `flutter_inappwebview`'s `ContextMenu`. Replace it
+  with the package-owned `EpubContextMenu` / `EpubContextMenuItem`:
+
+  ```dart
+  selectionContextMenu: EpubContextMenu(
+    hideDefaultSystemItems: true,
+    items: [
+      EpubContextMenuItem(id: 1, title: 'Highlight', action: () { /* ... */ }),
+    ],
+  ),
+  ```
+
+- Request methods (`getCurrentLocation`, `search`, `extractText`, `getRectFromCfi`,
+  …) now return their values directly and throw `TimeoutException` instead of hanging
+  if the viewer never replies. Tune the wait via `EpubController.requestTimeout`.
+
+See the [CHANGELOG](CHANGELOG.md) for the full list of changes.
+
 ## 📖 Usage
 
 ### Basic Example
@@ -99,7 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
 | `headers` | `Map<String, String>` | HTTP headers for loading EPUBs from the network. |
 | `initialCfi` | `String?` | Initial CFI string to specify the starting position. Defaults to the first chapter if null. |
 | `displaySettings` | `EpubDisplaySettings?` | Initial display settings (flow, snap, etc.). |
-| `selectionContextMenu` | `ContextMenu?` | Custom context menu for text selection. If null, the default menu is used. |
+| `selectionContextMenu` | `EpubContextMenu?` | Custom context menu for text selection (mobile). If null, the default menu is used. Ignored on web. |
 | `selectAnnotationRange` | `bool` | If `true`, clicking an annotation automatically selects the text range. Defaults to `false`. |
 
 ### Callbacks
