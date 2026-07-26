@@ -28,3 +28,5 @@ migrate_working_dir/
 .dart_tool/
 build/
 example/android/app/.cxx
+!example/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
+!example/macos/Flutter/ephemeral/flutter_export_environment.sh
