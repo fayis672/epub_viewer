@@ -50,6 +50,7 @@ class EpubViewer extends StatefulWidget {
     this.suppressNativeContextMenu = false,
     this.clearSelectionOnPageChange = true,
     this.selectAnnotationRange = false,
+    this.onWordTapped,
   });
 
   //Epub controller to manage epub
@@ -195,6 +196,8 @@ class EpubViewer extends StatefulWidget {
   /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
   final void Function(double x, double y)? onTouchUp;
 
+  final ValueChanged<String>? onWordTapped;
+
   @override
   State<EpubViewer> createState() => _EpubViewerState();
 }
@@ -281,11 +284,15 @@ class _EpubViewerState extends State<EpubViewer> {
 
     controller.addHandler("chapters", (data) async {
       if (kDebugMode) {
-        debugPrint("[EpubViewer] 7. 'chapters' JS handler received, parsing chapters...");
+        debugPrint(
+          "[EpubViewer] 7. 'chapters' JS handler received, parsing chapters...",
+        );
       }
       final chapters = await widget.epubController.parseChapters();
       if (kDebugMode) {
-        debugPrint("[EpubViewer] 8. Chapters parsed (${chapters.length} chapters found)");
+        debugPrint(
+          "[EpubViewer] 8. Chapters parsed (${chapters.length} chapters found)",
+        );
       }
       widget.onChaptersLoaded?.call(chapters);
     });
@@ -333,7 +340,11 @@ class _EpubViewerState extends State<EpubViewer> {
 
       // If we have coordinates and a selection callback, provide full selection info
       if (rect != null && widget.onSelection != null) {
-        _handleSelection(rect: rect, selectedText: selectedText, cfi: cfiString);
+        _handleSelection(
+          rect: rect,
+          selectedText: selectedText,
+          cfi: cfiString,
+        );
       }
     });
 
@@ -381,8 +392,9 @@ class _EpubViewerState extends State<EpubViewer> {
 
     controller.addHandler("relocated", (data) {
       var location = data[0];
-      widget.onRelocated
-          ?.call(EpubLocation.fromJson(Utils.asStringMap(location)));
+      widget.onRelocated?.call(
+        EpubLocation.fromJson(Utils.asStringMap(location)),
+      );
     });
 
     controller.addHandler('locationLoaded', (arguments) {
@@ -434,6 +446,12 @@ class _EpubViewerState extends State<EpubViewer> {
       widget.onAnnotationClicked?.call(cfi, rect);
     });
 
+    controller.addHandler('wordTapped', (data) {
+      if (data.isNotEmpty && data[0] is String) {
+        widget.onWordTapped?.call(data[0] as String);
+      }
+    });
+
     // Note: request/response calls (getCurrentLocation, search, extractText,
     // getRectFromCfi, ...) now return their values directly via
     // [EpubWebViewController.callAsync] and no longer need handler channels.
@@ -483,7 +501,8 @@ class _EpubViewerState extends State<EpubViewer> {
     // The iOS/iPad selection-polling fallbacks are only needed on mobile;
     // browsers (and desktop) fire `selectionchange` reliably, so we disable
     // polling there to avoid perpetual background CPU/battery cost.
-    final bool usePolling = !kIsWeb &&
+    final bool usePolling =
+        !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||
             defaultTargetPlatform == TargetPlatform.android);
 
@@ -514,7 +533,8 @@ class _EpubViewerState extends State<EpubViewer> {
   Widget build(BuildContext context) {
     return createEpubPlatformView(
       EpubPlatformViewConfig(
-        backgroundDecoration: widget.displaySettings?.theme?.backgroundDecoration,
+        backgroundDecoration:
+            widget.displaySettings?.theme?.backgroundDecoration,
         contextMenu: widget.selectionContextMenu,
         suppressNativeContextMenu: widget.suppressNativeContextMenu,
         disableVerticalScroll: widget.displaySettings?.snap ?? false,
@@ -540,15 +560,15 @@ class _EpubViewerState extends State<EpubViewer> {
       }
 
       // Check if selection still exists and re-apply blocking if needed
-      webViewController
-          ?.callMethod('checkSelectionAndReapplyBlocking')
-          .then((result) {
-            // If selection no longer exists, stop monitoring
-            if (result == 'no-selection') {
-              _stopSelectionMonitoring();
-              _blockGesturesWhenSelected(false);
-            }
-          });
+      webViewController?.callMethod('checkSelectionAndReapplyBlocking').then((
+        result,
+      ) {
+        // If selection no longer exists, stop monitoring
+        if (result == 'no-selection') {
+          _stopSelectionMonitoring();
+          _blockGesturesWhenSelected(false);
+        }
+      });
     });
   }
 

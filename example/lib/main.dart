@@ -257,6 +257,9 @@ class _MyHomePageState extends State<MyHomePage> {
           onTouchUp: (x, y) {
             debugPrint("Touch up at $x , $y");
           },
+          onWordTapped: (word) {
+            debugPrint("Word tapped: $word");
+          },
           selectAnnotationRange: true,
         ),
         Visibility(
