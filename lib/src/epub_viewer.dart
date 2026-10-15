@@ -48,6 +48,9 @@ class EpubViewer extends StatefulWidget {
     this.onTouchDown,
     this.onTouchUp,
     this.onFootnoteTapped,
+    this.onLoadError,
+    this.initialLocations,
+    this.onLocationsGenerated,
     this.suppressNativeContextMenu = false,
     this.clearSelectionOnPageChange = true,
     this.selectAnnotationRange = false,
@@ -58,6 +61,9 @@ class EpubViewer extends StatefulWidget {
 
   ///Epub source, accepts url, file or assets
   ///opf format is not tested, use with caution
+  ///
+  ///Passing a source that is not equal to the previous one (see
+  ///[EpubSource.==]) loads the new book in place.
   final EpubSource epubSource;
 
   ///Initial cfi string to  specify which part of epub to load initially
@@ -208,6 +214,28 @@ class EpubViewer extends StatefulWidget {
   /// those semantics, when it is a superscript link to a fragment.
   final ValueChanged<EpubFootnote>? onFootnoteTapped;
 
+  /// Callback fired when the book cannot be opened, with an
+  /// [EpubLoadException]: the source failed to load (missing file or asset,
+  /// HTTP error, no network) or the file is not a valid EPUB.
+  ///
+  /// When null, the error is reported through [FlutterError.reportError].
+  final ValueChanged<EpubLoadException>? onLoadError;
+
+  /// Locations saved from an earlier [onLocationsGenerated] call for this book.
+  ///
+  /// Locations power `progress` and `toProgressPercentage`; generating them
+  /// parses every chapter, which is slow on large books. Passing the cached
+  /// value skips that work, so progress is available right away. Store it per
+  /// book (and per book version): locations from another book give wrong
+  /// progress. An empty or unreadable value falls back to generating.
+  final String? initialLocations;
+
+  /// Callback fired with the book's locations, serialized, after they have
+  /// been generated. Save the value and pass it back as [initialLocations]
+  /// the next time this book is opened. Not called when [initialLocations]
+  /// was used.
+  final ValueChanged<String>? onLocationsGenerated;
+
   @override
   State<EpubViewer> createState() => _EpubViewerState();
 }
@@ -217,6 +245,35 @@ class _EpubViewerState extends State<EpubViewer> {
   _selectionCheckTimer; // Timer to periodically verify selection still exists
 
   EpubWebViewController? webViewController;
+
+  /// Whether the JS side has signalled `readyToLoad`; before that, a source
+  /// change needs no reload (the first load picks up the current source).
+  bool _readyToLoad = false;
+
+  /// Incremented per [loadBook] call so a slow, superseded load is dropped.
+  int _loadGeneration = 0;
+
+  @override
+  void didUpdateWidget(covariant EpubViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_readyToLoad && widget.epubSource != oldWidget.epubSource) {
+      loadBook();
+    }
+  }
+
+  void _reportLoadError(EpubLoadException error) {
+    if (widget.onLoadError != null) {
+      widget.onLoadError!(error);
+      return;
+    }
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        library: 'flutter_epub_viewer',
+        context: ErrorDescription('while loading an EPUB'),
+      ),
+    );
+  }
 
   /// Block or unblock gestures using CSS touch-action when selection is active
   void _blockGesturesWhenSelected(bool block) {
@@ -428,7 +485,19 @@ class _EpubViewerState extends State<EpubViewer> {
       if (kDebugMode) {
         debugPrint("[EpubViewer] 4. 'readyToLoad' JS handler received in Dart");
       }
+      _readyToLoad = true;
       loadBook();
+    });
+
+    controller.addHandler("loadError", (data) {
+      final message = data.isNotEmpty ? '${data[0]}' : 'Unknown error';
+      _reportLoadError(EpubLoadException('Could not open EPUB: $message'));
+    });
+
+    controller.addHandler("locationsGenerated", (data) {
+      if (data.isNotEmpty && data[0] is String) {
+        widget.onLocationsGenerated?.call(data[0] as String);
+      }
     });
 
     controller.addHandler("markClicked", (data) {
@@ -479,7 +548,21 @@ class _EpubViewerState extends State<EpubViewer> {
       return;
     }
 
-    final data = await widget.epubSource.epubData;
+    final generation = ++_loadGeneration;
+    final Uint8List data;
+    try {
+      data = await widget.epubSource.epubData;
+    } catch (e) {
+      if (generation == _loadGeneration && mounted) {
+        _reportLoadError(
+          EpubLoadException('Failed to load EPUB source', cause: e),
+        );
+      }
+      return;
+    }
+    // A newer source was set (or the widget was disposed) while loading.
+    if (generation != _loadGeneration || !mounted) return;
+
     final displaySettings = widget.displaySettings ?? EpubDisplaySettings();
     final String manager = displaySettings.manager.name;
     final String flow = displaySettings.flow.name;
@@ -535,6 +618,8 @@ class _EpubViewerState extends State<EpubViewer> {
         'customCss': customCss,
         'usePolling': usePolling,
         'interceptFootnotes': widget.onFootnoteTapped != null,
+        'cachedLocations': widget.initialLocations,
+        'reportLocations': widget.onLocationsGenerated != null,
         // "[EPUB-TEST]" diagnostics in the JS console, debug builds only.
         'debugLogs': kDebugMode,
       },
@@ -591,6 +676,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
   @override
   void dispose() {
+    _loadGeneration++;
     _stopSelectionMonitoring();
     webViewController?.dispose();
     super.dispose();

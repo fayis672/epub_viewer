@@ -12,4 +12,5 @@ export 'src/models/epub_text_selection.dart';
 export 'src/models/epub_theme.dart';
 export 'src/models/epub_context_menu.dart';
 export 'src/models/epub_footnote.dart';
+export 'src/models/epub_load_exception.dart';
 export 'src/epub_metadata.dart';

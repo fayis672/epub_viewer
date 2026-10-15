@@ -74,8 +74,9 @@ class EpubController {
     return _chapters;
   }
 
+  /// Fetches the chapters of the currently loaded book. Always re-reads them,
+  /// so a book swapped in through a new [EpubViewer.epubSource] is reflected.
   Future<List<EpubChapter>> parseChapters() async {
-    if (_chapters.isNotEmpty) return _chapters;
     final result = await _request('getChapters');
     _chapters = parseChapterList(result);
     return _chapters;

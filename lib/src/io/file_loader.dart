@@ -5,4 +5,4 @@
 /// [EpubSource.fromUrl], [EpubSource.fromAsset] or [EpubSource.fromData] there.
 library;
 
-export 'file_loader_web.dart' if (dart.library.io) 'file_loader_io.dart';
+export 'file_loader_io.dart' if (dart.library.js_interop) 'file_loader_web.dart';

@@ -147,7 +147,8 @@ class _MyHomePageState extends State<MyHomePage> {
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
 | `epubController` | `EpubController` | Controller to manage EPUB actions and state. |
-| `epubSource` | `EpubSource` | Source of the EPUB (URL, File, or Asset). **Note**: OPF format is not fully tested. |
+| `epubSource` | `EpubSource` | Source of the EPUB (URL, File, or Asset). Loaded lazily; passing a different source loads the new book in place. **Note**: OPF format is not fully tested. |
+| `initialLocations` | `String?` | Locations saved from `onLocationsGenerated` for this book. Skips location generation, so progress is available immediately. |
 | `headers` | `Map<String, String>` | HTTP headers for loading EPUBs from the network. |
 | `initialCfi` | `String?` | Initial CFI string to specify the starting position. Defaults to the first chapter if null. |
 | `displaySettings` | `EpubDisplaySettings?` | Initial display settings (flow, snap, etc.). |
@@ -166,6 +167,8 @@ class _MyHomePageState extends State<MyHomePage> {
 | `onTouchDown` | Called on touch down event. Provides normalized (x, y) coordinates. |
 | `onTouchUp` | Called on touch up event. Provides normalized (x, y) coordinates. |
 | `onFootnoteTapped` | Called when a footnote reference is tapped. Returns `EpubFootnote` (text, HTML, href). When set, footnote links no longer navigate. |
+| `onLoadError` | Called with an `EpubLoadException` when the book cannot be opened (missing file, HTTP error, invalid EPUB). |
+| `onLocationsGenerated` | Called with the book's serialized locations once generated. Store them per book and pass them back as `initialLocations`. |
 
 `EpubLocation` also carries `chapterPage` / `chapterTotalPages` (screen pages within the current chapter, paginated flow only) and `printedPage` (the book's printed page label, when it has a page list).
 

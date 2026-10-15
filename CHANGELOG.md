@@ -8,6 +8,15 @@
 - `EpubLocation.chapterPage`, `chapterTotalPages` (screen pages within the
   current chapter, paginated flow) and `printedPage` (from the book's page
   list, when present) (#101).
+- `EpubViewer.onLoadError` — receive an `EpubLoadException` when a book cannot
+  be opened (missing file or asset, HTTP error, invalid EPUB). Previously the
+  error was unhandled and the viewer stayed blank. Without the callback, the
+  error goes to `FlutterError.reportError`.
+- Location caching: `EpubViewer.onLocationsGenerated` hands you the generated
+  locations; pass them back as `initialLocations` next time to skip
+  generation, so progress is available immediately on large books.
+- Changing `EpubViewer.epubSource` now loads the new book in place; the
+  previous book is destroyed instead of leaking.
 
 ### 🐛 Fixes
 - Table of contents entries now navigate correctly in books whose nav/NCX file
@@ -18,6 +27,15 @@
   `getCurrentLocation()` computes progress from the current position (#28).
 - The first page appears sooner on large books: location generation now
   starts after the first page is displayed (#100, #39, #72).
+- `EpubSource` loads lazily and sources are compared by what they point at,
+  so creating one inside `build()` no longer re-reads or re-downloads the book
+  on every rebuild. A failed load is retried on the next access.
+- `EpubSource.fromUrl` accepts any 2xx response and reports the HTTP status on
+  failure.
+- Search loads one chapter at a time instead of all at once, avoiding memory
+  spikes on large books; a chapter that fails to load is skipped.
+- `EpubSource.fromFile(File(...))` no longer shows an analyzer type error in
+  apps (the conditional import defaulted to the web `File` stub).
 
 ### 🔒 Security
 - Updated the bundled JSZip from 3.1.5 to 3.10.1. Versions before 3.7.0 allow

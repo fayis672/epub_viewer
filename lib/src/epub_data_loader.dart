@@ -31,17 +31,13 @@ class UrlEpubLoader implements EpubDataLoader {
 
   @override
   Future<Uint8List> loadData() async {
-    try {
-      final response = await http.get(Uri.parse(url), headers: headers);
-
-      if (response.statusCode == 200) {
-        return response.bodyBytes;
-      } else {
-        throw Exception('Failed to download file from URL');
-      }
-    } catch (e) {
-      throw Exception('Failed to download file from URL, $e');
+    final response = await http.get(Uri.parse(url), headers: headers);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Failed to download EPUB from $url (HTTP ${response.statusCode})',
+      );
     }
+    return response.bodyBytes;
   }
 }
 
