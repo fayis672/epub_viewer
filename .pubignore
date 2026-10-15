@@ -1,2 +1,12 @@
+# pub uses this file instead of .gitignore, so repeat the build/tool ignores
+# here to keep local publishes free of build output.
+.dart_tool/
+build/
+/pubspec.lock
+.idea/
+*.iml
+.DS_Store
+example/android/app/.cxx
+
 example/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
 example/macos/Flutter/ephemeral/flutter_export_environment.sh
