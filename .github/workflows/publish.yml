@@ -31,8 +31,10 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      # Exit code 65 means warnings only (e.g. depending on the
+      # flutter_inappwebview pre-release); errors still fail the job.
       - name: Dry run publish
-        run: dart pub publish --dry-run
+        run: dart pub publish --dry-run || [ $? -eq 65 ]
 
       - name: Publish to pub.dev
         run: dart pub publish -f
