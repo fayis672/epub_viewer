@@ -43,6 +43,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   List<EpubChapter> chapters = [];
 
+  /// Current flow, toggled from the app bar.
+  EpubFlow flow = EpubFlow.paginated;
+
+  /// Page info from the last relocation, shown under the progress bar.
+  String pageInfo = '';
+
   /// Web only: whether the beside-the-viewer chapters panel is visible.
   bool _showChapters = false;
 
@@ -135,6 +141,20 @@ class _MyHomePageState extends State<MyHomePage> {
       leading: leading,
       title: Text(widget.title),
       actions: [
+        IconButton(
+          tooltip: 'Toggle paginated / scrolled',
+          icon: Icon(flow == EpubFlow.paginated
+              ? Icons.view_day_outlined
+              : Icons.auto_stories_outlined),
+          onPressed: () {
+            setState(() {
+              flow = flow == EpubFlow.paginated
+                  ? EpubFlow.scrolled
+                  : EpubFlow.paginated;
+            });
+            epubController.setFlow(flow: flow);
+          },
+        ),
         if (showPageButtons) ...[
           IconButton(
             tooltip: 'Previous page',
@@ -163,10 +183,46 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _progressBar() => LinearProgressIndicator(
-        value: progress,
-        backgroundColor: Colors.transparent,
+  Widget _progressBar() => Column(
+        children: [
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.transparent,
+          ),
+          Text(
+            '${(progress * 100).toStringAsFixed(1)}%  $pageInfo',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       );
+
+  void _showFootnote(EpubFootnote footnote) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Note ${footnote.linkText}',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(footnote.text),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  epubController.display(cfi: footnote.href);
+                },
+                child: const Text('Go to note'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _chapterList({VoidCallback? onTap}) {
     if (chapters.isEmpty) {
@@ -227,9 +283,14 @@ class _MyHomePageState extends State<MyHomePage> {
             debugPrint('Epub loaded');
           },
           onRelocated: (value) {
-            debugPrint("Reloacted to $value");
+            debugPrint("Relocated to ${value.startCfi} (${value.progress})");
             setState(() {
               progress = value.progress;
+              pageInfo = [
+                if (value.chapterPage != null)
+                  'page ${value.chapterPage}/${value.chapterTotalPages} in chapter',
+                if (value.printedPage != null) 'printed p. ${value.printedPage}',
+              ].join(' · ');
             });
           },
           onAnnotationClicked: (cfi, data) {
@@ -253,6 +314,9 @@ class _MyHomePageState extends State<MyHomePage> {
           },
           onTouchDown: (x, y) {
             debugPrint("Touch down at $x , $y");
+          },
+          onFootnoteTapped: (footnote) {
+            _showFootnote(footnote);
           },
           onTouchUp: (x, y) {
             debugPrint("Touch up at $x , $y");
