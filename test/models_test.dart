@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,6 +15,68 @@ void main() {
     expect(loc.startCfi, 'a');
     expect(loc.progress, 0.5);
     expect(loc.toJson()['endXpath'], '/y');
+  });
+
+  test('EpubLocation parses chapter page fields, which are optional', () {
+    final loc = EpubLocation.fromJson({
+      'startCfi': 'a',
+      'endCfi': 'b',
+      'progress': 0.25,
+      'chapterPage': 3,
+      'chapterTotalPages': 12,
+      'printedPage': 'xii',
+    });
+    expect(loc.chapterPage, 3);
+    expect(loc.chapterTotalPages, 12);
+    expect(loc.printedPage, 'xii');
+
+    final bare =
+        EpubLocation.fromJson({'startCfi': 'a', 'endCfi': 'b', 'progress': 0});
+    expect(bare.chapterPage, isNull);
+    expect(bare.printedPage, isNull);
+  });
+
+  test('EpubFootnote parses and tolerates missing fields', () {
+    final note = EpubFootnote.fromJson({
+      'href': 'Text/notes.xhtml#n1',
+      'text': 'A note.',
+      'html': '<p>A note.</p>',
+      'linkText': '1',
+    });
+    expect(note.href, 'Text/notes.xhtml#n1');
+    expect(note.text, 'A note.');
+    expect(note.linkText, '1');
+    expect(EpubFootnote.fromJson({}).html, '');
+  });
+
+  test('EpubDisplaySettings and EpubTheme round-trip through JSON', () {
+    final settings = EpubDisplaySettings(
+      fontSize: 18,
+      flow: EpubFlow.scrolled,
+      spread: EpubSpread.none,
+      theme: EpubTheme.custom(
+        foregroundColor: const Color(0xff112233),
+        customCss: {
+          'p': {'color': 'red'},
+        },
+      ),
+    );
+    final json = settings.toJson();
+    expect(json['flow'], 'scrolled');
+    expect(json['theme']['foregroundColor'], 'ff112233');
+
+    final restored = EpubDisplaySettings.fromJson(json);
+    expect(restored.fontSize, 18);
+    expect(restored.flow, EpubFlow.scrolled);
+    expect(restored.spread, EpubSpread.none);
+    expect(restored.manager, EpubManager.continuous);
+    expect(restored.theme!.foregroundColor, const Color(0xff112233));
+    expect(restored.theme!.customCss!['p'], {'color': 'red'});
+    expect(restored.theme!.themeType, EpubThemeType.custom);
+
+    // Without a theme, the key is omitted and defaults apply on parse.
+    expect(EpubDisplaySettings().toJson().containsKey('theme'), isFalse);
+    expect(EpubDisplaySettings.fromJson({}).flow, EpubFlow.paginated);
   });
 
   test('EpubChapter parses nested subitems', () {

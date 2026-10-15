@@ -1,3 +1,54 @@
+## 2.1.0
+
+### ✨ New
+- `EpubViewer.onFootnoteTapped` — receive footnote taps as an `EpubFootnote`
+  (text, HTML, href) instead of navigating to the note, e.g. to show the note
+  in a bottom sheet. Opt-in: without the callback, footnote links navigate as
+  before (#84).
+- `EpubLocation.chapterPage`, `chapterTotalPages` (screen pages within the
+  current chapter, paginated flow) and `printedPage` (from the book's page
+  list, when present) (#101).
+
+### 🐛 Fixes
+- Table of contents entries now navigate correctly in books whose nav/NCX file
+  is in a subfolder (hrefs like `../Text/ch1.xhtml`); `EpubChapter.href` is
+  now relative to the package folder (#112).
+- `progress` is no longer stuck at 0 after opening a book at `initialCfi`:
+  the location is re-sent once locations are generated, and
+  `getCurrentLocation()` computes progress from the current position (#28).
+- The first page appears sooner on large books: location generation now
+  starts after the first page is displayed (#100, #39, #72).
+
+### 🔒 Security
+- Updated the bundled JSZip from 3.1.5 to 3.10.1. Versions before 3.7.0 allow
+  prototype pollution through crafted file names in a zip
+  (CVE-2021-23413), which a malicious EPUB could trigger.
+
+### ⚠️ Requirements
+- Now depends on `flutter_inappwebview: ^6.2.0-beta.3` (needed for macOS).
+  On Android this requires your app to use **Android Gradle Plugin 8.9.1+**
+  and **`compileSdk` 36+** (from `androidx.browser:browser:1.9.0`).
+- macOS: deployment target 10.15+ (Flutter's own minimum).
+
+### 🧹 Maintenance
+- Removed the `json_annotation`, `json_serializable` and `build_runner`
+  dependencies; models now have hand-written `fromJson` / `toJson` with the
+  same JSON keys. `EpubTheme` JSON now also includes `customCss`.
+- `EpubController` methods now declare return types (`void` /
+  `Future<void>`); no behavior change.
+- Example app: Android Gradle Plugin 8.11.1, Gradle 8.14.3, Kotlin 2.2.20,
+  Java 17; `flutter_lints` 6. Adds a paginated/scrolled toggle, page info under
+  the progress bar and a footnote bottom sheet.
+
+### 📖 Docs
+- README: setting the selection highlight color with `::selection` in
+  `customCss`, and why the selection handles cannot be styled (#111).
+- README: corrected the macOS minimum to 10.15.
+
+### 🔧 Debugging
+- Debug builds log `[EPUB-TEST]` diagnostics (load timings, relocations,
+  TOC hrefs, footnote lookups) to the console.
+
 ## 2.0.0
 
 Adds **Flutter Web** and **macOS** support and a substantial architecture

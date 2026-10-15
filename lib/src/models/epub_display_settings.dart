@@ -1,9 +1,5 @@
-import 'package:json_annotation/json_annotation.dart';
 import 'epub_theme.dart';
 
-part 'epub_display_settings.g.dart';
-
-@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class EpubDisplaySettings {
   /// Font size of the reader
   int fontSize;
@@ -49,9 +45,37 @@ class EpubDisplaySettings {
     this.manager = EpubManager.continuous,
     this.theme,
   });
+
   factory EpubDisplaySettings.fromJson(Map<String, dynamic> json) =>
-      _$EpubDisplaySettingsFromJson(json);
-  Map<String, dynamic> toJson() => _$EpubDisplaySettingsToJson(this);
+      EpubDisplaySettings(
+        fontSize: (json['fontSize'] as num?)?.toInt() ?? 15,
+        spread: EpubSpread.values.asNameMap()[json['spread']] ?? EpubSpread.auto,
+        flow: EpubFlow.values.asNameMap()[json['flow']] ?? EpubFlow.paginated,
+        allowScriptedContent: json['allowScriptedContent'] as bool? ?? false,
+        defaultDirection:
+            EpubDefaultDirection.values.asNameMap()[json['defaultDirection']] ??
+                EpubDefaultDirection.ltr,
+        snap: json['snap'] as bool? ?? true,
+        useSnapAnimationAndroid:
+            json['useSnapAnimationAndroid'] as bool? ?? false,
+        manager: EpubManager.values.asNameMap()[json['manager']] ??
+            EpubManager.continuous,
+        theme: json['theme'] == null
+            ? null
+            : EpubTheme.fromJson(json['theme'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'fontSize': fontSize,
+        'spread': spread.name,
+        'flow': flow.name,
+        'defaultDirection': defaultDirection.name,
+        'allowScriptedContent': allowScriptedContent,
+        'manager': manager.name,
+        'snap': snap,
+        'useSnapAnimationAndroid': useSnapAnimationAndroid,
+        if (theme != null) 'theme': theme!.toJson(),
+      };
 }
 
 enum EpubSpread {

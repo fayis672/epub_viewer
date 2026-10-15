@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:json_annotation/json_annotation.dart';
-import 'color_converter.dart';
-
-part 'epub_theme.g.dart';
 
 ///Theme type
 enum EpubThemeType { dark, light, custom }
 
 ///Class for customizing the theme of the reader
-@JsonSerializable()
-@ColorConverter()
 class EpubTheme {
-  @JsonKey(toJson: _decorationToJson, fromJson: _decorationFromJson)
   ///Background decoration of the reader, overrides customCss
   Decoration? backgroundDecoration;
   ///Foreground color of the reader, overrides customCss
@@ -26,14 +19,6 @@ class EpubTheme {
     this.customCss,
     required this.themeType,
   });
-
-  static _decorationToJson(Decoration? decoration) {
-    return null;
-  }
-
-  static Decoration? _decorationFromJson(Map<String, dynamic> json) {
-    return null;
-  }
 
   /// Uses dark theme, black background and white foreground color
   factory EpubTheme.dark() {
@@ -67,7 +52,21 @@ class EpubTheme {
     );
   }
 
-  factory EpubTheme.fromJson(Map<String, dynamic> json) =>
-      _$EpubThemeFromJson(json);
-  Map<String, dynamic> toJson() => _$EpubThemeToJson(this);
+  /// [backgroundDecoration] is not serialized and is null after [fromJson].
+  /// [foregroundColor] is stored as an ARGB hex string.
+  factory EpubTheme.fromJson(Map<String, dynamic> json) {
+    final color = json['foregroundColor'] as String?;
+    return EpubTheme(
+      foregroundColor: color == null ? null : Color(int.parse(color, radix: 16)),
+      customCss: (json['customCss'] as Map?)?.cast<String, dynamic>(),
+      themeType: EpubThemeType.values.byName(json['themeType'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'backgroundDecoration': null,
+        'foregroundColor': foregroundColor?.toARGB32().toRadixString(16),
+        'customCss': customCss,
+        'themeType': themeType.name,
+      };
 }

@@ -1,9 +1,4 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'epub_chapter.g.dart';
-
 /// Epub chapter object
-@JsonSerializable(explicitToJson: true)
 class EpubChapter {
   /// The title of the chapter
   final String title;
@@ -21,9 +16,22 @@ class EpubChapter {
     required this.id,
     required this.subitems,
   });
-  factory EpubChapter.fromJson(Map<String, dynamic> json) =>
-      _$EpubChapterFromJson(json);
-  Map<String, dynamic> toJson() => _$EpubChapterToJson(this);
+
+  factory EpubChapter.fromJson(Map<String, dynamic> json) => EpubChapter(
+        title: json['title'] as String,
+        href: json['href'] as String,
+        id: json['id'] as String,
+        subitems: (json['subitems'] as List<dynamic>)
+            .map((e) => EpubChapter.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'href': href,
+        'id': id,
+        'subitems': subitems.map((e) => e.toJson()).toList(),
+      };
 }
 
 

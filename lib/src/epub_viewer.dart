@@ -47,6 +47,7 @@ class EpubViewer extends StatefulWidget {
     this.onInitialPositionLoaded,
     this.onTouchDown,
     this.onTouchUp,
+    this.onFootnoteTapped,
     this.suppressNativeContextMenu = false,
     this.clearSelectionOnPageChange = true,
     this.selectAnnotationRange = false,
@@ -194,6 +195,18 @@ class EpubViewer extends StatefulWidget {
   /// * [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
   /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
   final void Function(double x, double y)? onTouchUp;
+
+  /// Callback fired when the user taps a footnote reference.
+  ///
+  /// When set, footnote taps no longer navigate to the note; the note's text
+  /// is passed here instead, e.g. to show it in a bottom sheet. Use
+  /// `epubController.display(cfi: footnote.href)` to navigate to it anyway.
+  /// When null (default), footnote links navigate as before.
+  ///
+  /// A link counts as a footnote reference when the book marks it with
+  /// `epub:type="noteref"` or `role="doc-noteref"`, or, for books without
+  /// those semantics, when it is a superscript link to a fragment.
+  final ValueChanged<EpubFootnote>? onFootnoteTapped;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
@@ -434,6 +447,21 @@ class _EpubViewerState extends State<EpubViewer> {
       widget.onAnnotationClicked?.call(cfi, rect);
     });
 
+    controller.addHandler("footnoteTapped", (data) {
+      try {
+        final footnote = EpubFootnote.fromJson(Utils.asStringMap(data[0]));
+        if (kDebugMode) {
+          debugPrint("[EPUB-TEST][footnote] Dart received href=${footnote.href} "
+              "text=${footnote.text.length} chars");
+        }
+        widget.onFootnoteTapped?.call(footnote);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error parsing footnote: $e');
+        }
+      }
+    });
+
     // Note: request/response calls (getCurrentLocation, search, extractText,
     // getRectFromCfi, ...) now return their values directly via
     // [EpubWebViewController.callAsync] and no longer need handler channels.
@@ -506,6 +534,9 @@ class _EpubViewerState extends State<EpubViewer> {
         'selectAnnotationRange': widget.selectAnnotationRange,
         'customCss': customCss,
         'usePolling': usePolling,
+        'interceptFootnotes': widget.onFootnoteTapped != null,
+        // "[EPUB-TEST]" diagnostics in the JS console, debug builds only.
+        'debugLogs': kDebugMode,
       },
     ]);
   }

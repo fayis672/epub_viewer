@@ -1,8 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'epub_search_result.g.dart';
-
-@JsonSerializable(explicitToJson: true)
 class EpubSearchResult {
   /// The cfi string search result
   String cfi;
@@ -18,7 +13,17 @@ class EpubSearchResult {
     required this.excerpt,
     this.xpath,
   });
+
   factory EpubSearchResult.fromJson(Map<String, dynamic> json) =>
-      _$EpubSearchResultFromJson(json);
-  Map<String, dynamic> toJson() => _$EpubSearchResultToJson(this);
+      EpubSearchResult(
+        cfi: json['cfi'] as String,
+        excerpt: json['excerpt'] as String,
+        xpath: json['xpath'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'cfi': cfi,
+        'excerpt': excerpt,
+        'xpath': xpath,
+      };
 }

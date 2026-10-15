@@ -63,8 +63,8 @@ Notes for web:
 macOS uses the same `flutter_inappwebview` (WKWebView) rendering path as iOS, so
 all `EpubController`/`EpubViewer` APIs and callbacks behave the same as on mobile.
 
-- Requires a macOS deployment target of **10.13** or higher (a
-  `flutter_inappwebview` requirement). Set `platform :osx, '10.13'` (or higher) in
+- Requires a macOS deployment target of **10.15** or higher (Flutter's own
+  minimum; `flutter_inappwebview` needs 10.14). Set `platform :osx, '10.15'` (or higher) in
   your app's `macos/Podfile` if it is currently lower.
 - Loading an EPUB from the network (`EpubSource.fromUrl(...)`) or writing
   highlights/annotations may require the App Sandbox network entitlement. Add
@@ -165,6 +165,9 @@ class _MyHomePageState extends State<MyHomePage> {
 | `onAnnotationClicked` | Called when an annotation (highlight/underline) is clicked. Provides CFI range and rect. |
 | `onTouchDown` | Called on touch down event. Provides normalized (x, y) coordinates. |
 | `onTouchUp` | Called on touch up event. Provides normalized (x, y) coordinates. |
+| `onFootnoteTapped` | Called when a footnote reference is tapped. Returns `EpubFootnote` (text, HTML, href). When set, footnote links no longer navigate. |
+
+`EpubLocation` also carries `chapterPage` / `chapterTotalPages` (screen pages within the current chapter, paginated flow only) and `printedPage` (the book's printed page label, when it has a page list).
 
 ### EpubController Methods
 
@@ -216,6 +219,15 @@ EpubTheme.custom(
   },
 );
 
+// Selection highlight color (the selection handles are drawn by the OS:
+// on Android they follow your app theme's colorControlActivated / colorAccent,
+// on iOS the system tint, and cannot be styled with CSS)
+EpubTheme.custom(
+  customCss: {
+    '::selection': {'background': 'rgba(255, 200, 0, 0.4)'},
+  },
+);
+
 // Selection
 epubController.clearSelection(); // Clear active selection
 epubController.extractText(startCfi: start, endCfi: end); // Extract text from range
@@ -232,7 +244,8 @@ epubController.setFontSize(fontSize: 16); // Adjust font size
 
 *   **OPF Support**: The OPF format is not fully supported yet.
 *   **Android Animation**: `onRelocated` callback may be broken when `useSnapAnimationAndroid` is set to `true` in `EpubDisplaySettings` on Android.
-*   **Scrolled Flow**: Chapter navigation might break initially when using `scrolled` flow.
+*   **Scrolled Flow**: Chapter navigation might land past the requested location when using `scrolled` flow ([#27](https://github.com/fayis672/epub_viewer/issues/27)).
+*   **Total Page Count**: There is no whole-book page count, since that would require laying out every chapter. Use `progress`, or `chapterPage` / `chapterTotalPages` for the current chapter.
 
 ## 🔮 Upcoming Features
 

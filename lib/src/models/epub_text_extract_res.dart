@@ -1,9 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'epub_text_extract_res.g.dart';
-
-@JsonSerializable(explicitToJson: true)
-
 ///Epub text extraction callback object
 class EpubTextExtractRes {
   String? text;
@@ -15,7 +9,17 @@ class EpubTextExtractRes {
     this.cfiRange,
     this.xpathRange,
   });
+
   factory EpubTextExtractRes.fromJson(Map<String, dynamic> json) =>
-      _$EpubTextExtractResFromJson(json);
-  Map<String, dynamic> toJson() => _$EpubTextExtractResToJson(this);
+      EpubTextExtractRes(
+        text: json['text'] as String?,
+        cfiRange: json['cfiRange'] as String?,
+        xpathRange: json['xpathRange'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'cfiRange': cfiRange,
+        'xpathRange': xpathRange,
+      };
 }

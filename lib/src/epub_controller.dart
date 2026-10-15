@@ -28,7 +28,7 @@ class EpubController {
   ///List of chapters from epub
   List<EpubChapter> _chapters = [];
 
-  setWebViewController(EpubWebViewController controller) {
+  void setWebViewController(EpubWebViewController controller) {
     webViewController = controller;
   }
 
@@ -40,7 +40,7 @@ class EpubController {
   }
 
   ///Move epub view to specific area using Cfi string, XPath/XPointer, or chapter href
-  display({
+  void display({
     ///Cfi String, XPath/XPointer string, or chapter href of the desired location
     ///If the string starts with '/', it will be treated as XPath/XPointer
     required String cfi,
@@ -50,13 +50,13 @@ class EpubController {
   }
 
   ///Moves to next page in epub view
-  next() {
+  void next() {
     checkEpubLoaded();
     webViewController?.callMethod('next');
   }
 
   ///Moves to previous page in epub view
-  prev() {
+  void prev() {
     checkEpubLoaded();
     webViewController?.callMethod('previous');
   }
@@ -100,7 +100,7 @@ class EpubController {
   }
 
   ///Adds a highlight to epub viewer
-  addHighlight({
+  void addHighlight({
     ///Cfi string of the desired location
     required String cfi,
 
@@ -117,50 +117,50 @@ class EpubController {
   }
 
   ///Adds a underline annotation
-  addUnderline({required String cfi}) {
+  void addUnderline({required String cfi}) {
     checkEpubLoaded();
     webViewController?.callMethod('addUnderLine', [cfi]);
   }
 
   ///Removes a highlight from epub viewer
-  removeHighlight({required String cfi}) {
+  void removeHighlight({required String cfi}) {
     checkEpubLoaded();
     webViewController?.callMethod('removeHighlight', [cfi]);
   }
 
   ///Removes a underline from epub viewer
-  removeUnderline({required String cfi}) {
+  void removeUnderline({required String cfi}) {
     checkEpubLoaded();
     webViewController?.callMethod('removeUnderLine', [cfi]);
   }
 
   ///Clears any active text selection in the epub viewer
-  clearSelection() {
+  void clearSelection() {
     checkEpubLoaded();
     webViewController?.callMethod('clearSelection');
   }
 
   ///Set [EpubSpread] value
-  setSpread({required EpubSpread spread}) async {
+  Future<void> setSpread({required EpubSpread spread}) async {
     await webViewController?.callMethod('setSpread', [spread.name]);
   }
 
   ///Set [EpubFlow] value
-  setFlow({required EpubFlow flow}) async {
+  Future<void> setFlow({required EpubFlow flow}) async {
     await webViewController?.callMethod('setFlow', [flow.name]);
   }
 
   ///Set [EpubManager] value
-  setManager({required EpubManager manager}) async {
+  Future<void> setManager({required EpubManager manager}) async {
     await webViewController?.callMethod('setManager', [manager.name]);
   }
 
   ///Adjust font size in epub viewer
-  setFontSize({required double fontSize}) async {
+  Future<void> setFontSize({required double fontSize}) async {
     await webViewController?.callMethod('setFontSize', [fontSize]);
   }
 
-  updateTheme({required EpubTheme theme}) async {
+  Future<void> updateTheme({required EpubTheme theme}) async {
     String? foregroundColor = theme.foregroundColor?.toHex();
     await webViewController?.callMethod('updateTheme', [
       '',
@@ -172,10 +172,10 @@ class EpubController {
   ///Extract text from a given cfi range
   Future<EpubTextExtractRes> extractText({
     ///start cfi
-    required startCfi,
+    required String startCfi,
 
     ///end cfi
-    required endCfi,
+    required String endCfi,
   }) async {
     final result = await _request('getTextFromCfi', [startCfi, endCfi]);
     return EpubTextExtractRes.fromJson(Utils.asStringMap(result));
@@ -203,7 +203,7 @@ class EpubController {
 
   ///Given a percentage moves to the corresponding page
   ///Progress percentage should be between 0.0 and 1.0
-  toProgressPercentage(double progressPercent) {
+  void toProgressPercentage(double progressPercent) {
     assert(
       progressPercent >= 0.0 && progressPercent <= 1.0,
       'Progress percentage must be between 0.0 and 1.0',
@@ -213,16 +213,16 @@ class EpubController {
   }
 
   ///Moves to the first page of the epub
-  moveToFistPage() {
+  void moveToFistPage() {
     toProgressPercentage(0.0);
   }
 
   ///Moves to the last page of the epub
-  moveToLastPage() {
+  void moveToLastPage() {
     toProgressPercentage(1.0);
   }
 
-  checkEpubLoaded() {
+  void checkEpubLoaded() {
     if (webViewController == null) {
       throw Exception(
         "Epub viewer is not loaded, wait for onEpubLoaded callback",
