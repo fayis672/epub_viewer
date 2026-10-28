@@ -10,3 +10,6 @@ example/android/app/.cxx
 
 example/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
 example/macos/Flutter/ephemeral/flutter_export_environment.sh
+
+# Shown in the README from GitHub; not needed in the package.
+example/epub_viewr_exp.gif

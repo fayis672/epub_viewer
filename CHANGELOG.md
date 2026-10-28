@@ -1,3 +1,12 @@
+## 2.2.1
+
+### 📦 Size
+- Removed epub.js's source map (`epub.js.map`, 1.1 MB) from the bundled
+  assets. It was only for debugging and was shipped inside every app using
+  the package.
+- The demo GIF is no longer part of the published package (the README
+  loads it from GitHub), shrinking the download from 9 MB to about 4 MB.
+
 ## 2.2.0
 
 ### ⚡ Performance
