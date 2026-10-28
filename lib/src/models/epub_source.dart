@@ -63,3 +63,8 @@ class EpubSource {
   @override
   int get hashCode => _key.hashCode;
 }
+
+/// The loader behind [source]; lets the book server stream a file or URL
+/// without reading it into memory first. Package-internal (hidden from the
+/// public export).
+EpubDataLoader epubSourceLoader(EpubSource source) => source._loader;

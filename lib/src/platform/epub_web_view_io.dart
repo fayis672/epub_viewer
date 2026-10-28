@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../models/epub_context_menu.dart';
+import '../server/epub_book_server.dart';
 import 'epub_web_view_interface.dart';
 
 /// Maps the package-owned [EpubContextMenu] to the plugin's native menu.
@@ -124,6 +125,10 @@ class _IoEpubViewState extends State<_IoEpubView> {
     allowsLinkPreview: false,
     verticalScrollBarEnabled: false,
     selectionGranularity: SelectionGranularity.CHARACTER,
+    // Android serves books by interception (see EpubBookServer). Only book
+    // URLs reach Dart: the reader's own assets load from file:///android_asset,
+    // which is never intercepted.
+    useShouldInterceptRequest: EpubBookServer.usesInterception,
   )..disableVerticalScroll = widget.config.disableVerticalScroll;
 
   @override
@@ -172,20 +177,9 @@ class _IoEpubViewState extends State<_IoEpubView> {
             : 'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
         initialSettings: _settings,
         onWebViewCreated: (controller) async {
-          if (kDebugMode) {
-            debugPrint("[EpubViewer] 1. InAppWebView created");
-          }
           config.onControllerCreated(IoEpubWebViewController(controller));
           if (isMacOs) {
-            if (kDebugMode) {
-              debugPrint("[EpubViewer] 1b. Loading URL via localhost server: $url");
-            }
             await controller.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
-          }
-        },
-        onLoadStart: (controller, url) {
-          if (kDebugMode) {
-            debugPrint("[EpubViewer] 2. WebView load started: $url");
           }
         },
         onPermissionRequest: (controller, request) async {
@@ -194,13 +188,22 @@ class _IoEpubViewState extends State<_IoEpubView> {
             action: PermissionResponseAction.GRANT,
           );
         },
+        shouldInterceptRequest: EpubBookServer.usesInterception
+            ? (controller, request) async {
+                final served =
+                    await EpubBookServer.instance.intercept(request.url);
+                if (served == null) return null;
+                return WebResourceResponse(
+                  contentType: served.contentType,
+                  data: served.body,
+                  statusCode: served.statusCode,
+                  reasonPhrase: served.statusCode == 200 ? 'OK' : 'Error',
+                  headers: InterceptedResponse.headers,
+                );
+              }
+            : null,
         shouldOverrideUrlLoading: (controller, navigationAction) async {
           return NavigationActionPolicy.ALLOW;
-        },
-        onLoadStop: (controller, url) async {
-          if (kDebugMode) {
-            debugPrint("[EpubViewer] 3. WebView load finished: $url");
-          }
         },
         onReceivedError: (controller, request, error) {
           if (kDebugMode) {
@@ -210,8 +213,10 @@ class _IoEpubViewState extends State<_IoEpubView> {
         onProgressChanged: (controller, progress) {},
         onUpdateVisitedHistory: (controller, url, androidIsReload) {},
         onConsoleMessage: (controller, consoleMessage) {
-          if (kDebugMode) {
-            debugPrint("[EpubViewer JS] [${consoleMessage.messageLevel}]: ${consoleMessage.message}");
+          // Surface errors from the reader page (debug builds only).
+          if (kDebugMode &&
+              consoleMessage.messageLevel == ConsoleMessageLevel.ERROR) {
+            debugPrint('[EpubViewer JS] ${consoleMessage.message}');
           }
         },
         onLongPressHitTestResult: (controller, hitTestResult) {

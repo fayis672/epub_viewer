@@ -3,138 +3,79 @@
 [![Pub Version](https://img.shields.io/pub/v/flutter_epub_viewer?color=blue)](https://pub.dev/packages/flutter_epub_viewer)
 [![License](https://img.shields.io/github/license/fayis672/epub_viewer)](https://github.com/fayis672/epub_viewer/blob/main/LICENSE)
 
-A powerful Flutter package for viewing EPUB documents, built by combining the capabilities of [Epub.js](https://github.com/futurepress/epub.js) and [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview). This package provides a highly customizable and feature-rich EPUB reader for your Flutter applications.
+A complete EPUB reader for Flutter in one widget. It pages through books, tracks
+reading progress, searches, highlights, shows footnotes and applies themes, on
+Android, iOS, macOS and the web. Rendering is done by
+[epub.js](https://github.com/futurepress/epub.js) inside a WebView.
 
-<img width='50%' src="https://github.com/fayis672/epub_viewer/blob/main/example/epub_viewr_exp.gif?raw=true" alt="Demo GIF">
+<img width="50%" src="https://github.com/fayis672/epub_viewer/blob/main/example/epub_viewr_exp.gif?raw=true" alt="Demo GIF">
 
-## ✨ Features
+| Android | iOS | macOS | Web |
+| :---: | :---: | :---: | :---: |
+| ✅ | ✅ | ✅ (10.15+) | ✅ |
 
-*   **Text Highlighting**: Highlight important text within the EPUB.
-*   **Search Functionality**: Search for specific terms or phrases within the book.
-*   **Chapter Listing**: Easy navigation through chapters.
-*   **Text Selection**: Select text for copying or other actions.
-*   **Customizable UI**: Tailor the look and feel to match your app's design.
-*   **Reading Progress**: Resume reading from where you left off using CFI (Canonical Fragment Identifier).
-*   **Custom Context Menus**: Define custom actions for text selection.
-*   **Versatile Loading**: Load EPUBs from Files, URLs, or Assets.
-*   **Touch Interactions**: Receive touch event callbacks with normalized coordinates (`onTouchDown`, `onTouchUp`).
+**Contents:** [Install](#install) · [Quick start](#quick-start) · [Guides](#guides) ·
+[Troubleshooting](#troubleshooting) · [API overview](#api-overview) ·
+[Performance](#performance) · [Known issues](#known-issues) · [Contributing](#contributing)
 
-## 🚀 Getting Started
-
-### Installation
-
-Add the dependency to your `pubspec.yaml` file:
+## Install
 
 ```shell
 flutter pub add flutter_epub_viewer
 ```
 
-### Platform Setup
+Then set up the platforms you ship on:
 
-#### Android
+**Android**: nothing for the viewer itself. If you load books from the network,
+declare the `INTERNET` permission in `android/app/src/main/AndroidManifest.xml`.
+Flutter only adds it to debug builds:
 
-**Important**: You must enable cleartext traffic for the viewer to function correctly on Android 8.0+.
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
 
-Add `android:usesCleartextTraffic="true"` to your `AndroidManifest.xml` file in the `<application>` tag.
+**iOS**: nothing.
 
-For more details, refer to this [StackOverflow answer](https://stackoverflow.com/questions/45940861/android-8-cleartext-http-traffic-not-permitted/50834600#50834600).
+**macOS**: use a deployment target of 10.15 or higher (`platform :osx, '10.15'` in
+`macos/Podfile`). Add these entitlements to both `macos/Runner/DebugProfile.entitlements`
+and `macos/Runner/Release.entitlements`; the viewer serves its page and the book
+from `127.0.0.1`:
 
-Also, ensure you complete the platform-wise setup for `flutter_inappwebview` as described [here](https://inappwebview.dev/docs/intro).
+```xml
+<key>com.apple.security.network.server</key>
+<true/>
+<key>com.apple.security.network.client</key>
+<true/>
+```
 
-#### Web
+**Web**: nothing. See [web notes](#web) for what differs.
 
-Web is supported out of the box — no extra setup is required. Instead of a webview
-plugin, the viewer renders epub.js inside a native `<iframe>` and communicates with
-it through `dart:js_interop`, so all `EpubController`/`EpubViewer` APIs and callbacks
-behave the same as on mobile.
-
-Notes for web:
-
-- Prefer `EpubSource.fromData(Uint8List)` or `EpubSource.fromAsset(...)`. `EpubSource.fromUrl(...)`
-  works only if the remote server sends permissive CORS headers; `EpubSource.fromFile(...)`
-  is not available (there is no filesystem).
-- The epub `<iframe>` composites above the Flutter scene, so Flutter widgets placed
-  *over* the viewer (a `Drawer`, dialog, or pushed route) may not receive taps. Keep
-  interactive controls outside the viewer's rectangle (e.g. an `AppBar` or a side
-  panel) — see the example app.
-
-#### macOS
-
-macOS uses the same `flutter_inappwebview` (WKWebView) rendering path as iOS, so
-all `EpubController`/`EpubViewer` APIs and callbacks behave the same as on mobile.
-
-- Requires a macOS deployment target of **10.15** or higher (Flutter's own
-  minimum; `flutter_inappwebview` needs 10.14). Set `platform :osx, '10.15'` (or higher) in
-  your app's `macos/Podfile` if it is currently lower.
-- Loading an EPUB from the network (`EpubSource.fromUrl(...)`) or writing
-  highlights/annotations may require the App Sandbox network entitlement. Add
-  `com.apple.security.network.client` to `macos/Runner/*.entitlements` if network
-  loads fail.
-- Complete the macOS setup for `flutter_inappwebview` as described
-  [here](https://inappwebview.dev/docs/intro).
-
-## ⚠️ Migrating from 1.x to 2.0
-
-- The package no longer re-exports `flutter_inappwebview`'s `ContextMenu`. Replace it
-  with the package-owned `EpubContextMenu` / `EpubContextMenuItem`:
-
-  ```dart
-  selectionContextMenu: EpubContextMenu(
-    hideDefaultSystemItems: true,
-    items: [
-      EpubContextMenuItem(id: 1, title: 'Highlight', action: () { /* ... */ }),
-    ],
-  ),
-  ```
-
-- Request methods (`getCurrentLocation`, `search`, `extractText`, `getRectFromCfi`,
-  …) now return their values directly and throw `TimeoutException` instead of hanging
-  if the viewer never replies. Tune the wait via `EpubController.requestTimeout`.
-
-See the [CHANGELOG](CHANGELOG.md) for the full list of changes.
-
-## 📖 Usage
-
-### Basic Example
-
-Here is a simple example of how to use `EpubViewer` in your application:
+## Quick start
 
 ```dart
-import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class ReaderPage extends StatefulWidget {
+  const ReaderPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  final epubController = EpubController();
+class _ReaderPageState extends State<ReaderPage> {
+  final controller = EpubController();
+  double progress = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text('${(progress * 100).round()}%')),
       body: SafeArea(
         child: EpubViewer(
-          epubSource: EpubSource.fromUrl(
-              'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
-          epubController: epubController,
-          displaySettings:
-              EpubDisplaySettings(flow: EpubFlow.paginated, snap: true),
-          onChaptersLoaded: (chapters) {
-            // Handle chapters loaded
-          },
-          onEpubLoaded: () async {
-            // Handle epub loaded
-          },
-          onRelocated: (value) {
-            // Handle page change
-          },
-          onTextSelected: (epubTextSelection) {
-            // Handle text selection
-          },
+          epubController: controller,
+          epubSource: EpubSource.fromAsset('assets/book.epub'),
+          onRelocated: (location) => setState(() => progress = location.progress),
         ),
       ),
     );
@@ -142,144 +83,323 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 ```
 
-### Parameters
+The [example app](example/lib/main.dart) builds on this with a chapter list,
+search, highlights, footnote popups and error handling.
 
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `epubController` | `EpubController` | Controller to manage EPUB actions and state. |
-| `epubSource` | `EpubSource` | Source of the EPUB (URL, File, or Asset). Loaded lazily; passing a different source loads the new book in place. **Note**: OPF format is not fully tested. |
-| `initialLocations` | `String?` | Locations saved from `onLocationsGenerated` for this book. Skips location generation, so progress is available immediately. |
-| `headers` | `Map<String, String>` | HTTP headers for loading EPUBs from the network. |
-| `initialCfi` | `String?` | Initial CFI string to specify the starting position. Defaults to the first chapter if null. |
-| `displaySettings` | `EpubDisplaySettings?` | Initial display settings (flow, snap, etc.). |
-| `selectionContextMenu` | `EpubContextMenu?` | Custom context menu for text selection (mobile). If null, the default menu is used. Ignored on web. |
-| `selectAnnotationRange` | `bool` | If `true`, clicking an annotation automatically selects the text range. Defaults to `false`. |
+## Guides
 
-### Callbacks
-
-| Callback | Description |
-| :--- | :--- |
-| `onEpubLoaded` | Called when the EPUB is successfully loaded and displayed. |
-| `onChaptersLoaded` | Called when the chapters are loaded. Returns a list of `EpubChapter`. |
-| `onRelocated` | Called when the EPUB page changes. Returns `EpubLocation`. |
-| `onTextSelected` | Called when text is selected. Returns `EpubTextSelection`. |
-| `onAnnotationClicked` | Called when an annotation (highlight/underline) is clicked. Provides CFI range and rect. |
-| `onTouchDown` | Called on touch down event. Provides normalized (x, y) coordinates. |
-| `onTouchUp` | Called on touch up event. Provides normalized (x, y) coordinates. |
-| `onFootnoteTapped` | Called when a footnote reference is tapped. Returns `EpubFootnote` (text, HTML, href). When set, footnote links no longer navigate. |
-| `onLoadError` | Called with an `EpubLoadException` when the book cannot be opened (missing file, HTTP error, invalid EPUB). |
-| `onLocationsGenerated` | Called with the book's serialized locations once generated. Store them per book and pass them back as `initialLocations`. |
-
-`EpubLocation` also carries `chapterPage` / `chapterTotalPages` (screen pages within the current chapter, paginated flow only) and `printedPage` (the book's printed page label, when it has a page list).
-
-### EpubController Methods
-
-Use the `EpubController` to interact with the viewer programmatically:
+### Loading a book
 
 ```dart
-// Navigation
-epubController.display(cfi: cfiString); // Move to specific CFI or chapter href
-epubController.next(); // Go to next page
-epubController.prev(); // Go to previous page
-epubController.toProgressPercentage(0.5); // Go to 50% progress
-epubController.moveToFistPage(); // Go to first page
-epubController.moveToLastPage(); // Go to last page
+EpubSource.fromAsset('assets/book.epub')
+EpubSource.fromFile(File(path))
+EpubSource.fromUrl(url, headers: {'Authorization': 'Bearer …'})
+EpubSource.fromData(bytes)
+```
 
-// Information
-epubController.getCurrentLocation(); // Get current location info
-epubController.getChapters(); // Get list of chapters
-epubController.getMetadata(); // Get book metadata
+Sources are read only when the viewer needs them. To open another book, pass a
+new source to the same `EpubViewer`; the previous book is released.
 
-// Search
-epubController.search(query: "search term"); // Search in EPUB
+If a book cannot be opened (missing file, HTTP error, not an EPUB), the viewer
+calls `onLoadError` instead of staying blank:
 
-// Annotations
-epubController.addHighlight(cfi: cfiString, color: Colors.yellow); // Add highlight
-epubController.removeHighlight(cfi: cfiString); // Remove highlight
-epubController.addUnderline(cfi: cfiString); // Add underline
-epubController.removeUnderline(cfi: cfiString); // Remove underline
+```dart
+onLoadError: (error) => showError('Could not open the book: ${error.message}'),
+```
 
-// Custom Theme
+### Navigating
+
+```dart
+controller.next();
+controller.prev();
+controller.display(cfi: chapter.href);   // a chapter, or any CFI
+controller.toProgressPercentage(0.5);
+controller.moveToFistPage();
+controller.moveToLastPage();
+```
+
+`onChaptersLoaded` gives the table of contents as `EpubChapter`s (`title`,
+`href`, nested `subitems`), ready for a drawer or list.
+
+### Saving and restoring progress
+
+Every page change calls `onRelocated` with an `EpubLocation`:
+
+| Field | Meaning |
+| :--- | :--- |
+| `startCfi` / `endCfi` | Position of the page; save `startCfi` to resume later. |
+| `startXpath` / `endXpath` | The same position as XPath, when it can be resolved. |
+| `progress` | 0–1 through the whole book. |
+| `chapterPage` / `chapterTotalPages` | Screen page within the current chapter (paginated flow). |
+
+Pass the saved CFI back as `initialCfi` (or an XPath as `initialXPath`) to resume.
+
+`progress` depends on the book's *locations*, which the viewer computes after
+opening by reading every chapter once (`onLocationLoaded` fires when they are
+ready). Save them per book to make progress available instantly next time:
+
+```dart
+EpubViewer(
+  epubController: controller,
+  epubSource: source,
+  initialCfi: savedCfi,
+  initialLocations: savedLocations,   // null on the first open
+  onLocationsGenerated: (locations) => store.saveLocations(bookId, locations),
+  onRelocated: (location) => store.saveCfi(bookId, location.startCfi),
+)
+```
+
+### Search
+
+```dart
+final results = await controller.search(query: 'whale');
+for (final r in results) {
+  print(r.excerpt);                 // text around the match
+}
+controller.display(cfi: results.first.cfi);
+```
+
+### Selection, highlights and context menus
+
+`onTextSelected` gives the selected text and its CFI range. Use the range to
+annotate:
+
+```dart
+controller.addHighlight(cfi: cfiRange, color: Colors.yellow);
+controller.addUnderline(cfi: cfiRange);
+controller.removeHighlight(cfi: cfiRange);
+controller.removeUnderline(cfi: cfiRange);
+```
+
+Tapping an annotation calls `onAnnotationClicked` with its range.
+
+Add actions to the system selection menu (Android, iOS, macOS):
+
+```dart
+selectionContextMenu: EpubContextMenu(
+  hideDefaultSystemItems: true,
+  items: [
+    EpubContextMenuItem(id: 1, title: 'Highlight',
+        action: () => controller.addHighlight(cfi: selectedCfi)),
+  ],
+),
+```
+
+Or draw your own menu: set `suppressNativeContextMenu: true` and position it
+with `onSelection`, which gives the selection's rect. `onSelectionChanging` and
+`onDeselection` tell you when to hide it.
+
+Text helpers: `extractText(startCfi:, endCfi:)`, `extractCurrentPageText()` and
+`getRectFromCfi(cfiRange)`.
+
+### Footnotes
+
+Set `onFootnoteTapped` and footnote links stop navigating away. You get an
+`EpubFootnote` with the note's `text`, `html` and `href` to show in your own
+popup:
+
+```dart
+onFootnoteTapped: (note) => showModalBottomSheet(
+  context: context,
+  builder: (_) => Padding(padding: const EdgeInsets.all(16), child: Text(note.text)),
+),
+```
+
+### Themes and display
+
+Initial settings go in `displaySettings`:
+
+```dart
+displaySettings: EpubDisplaySettings(
+  flow: EpubFlow.paginated,      // or EpubFlow.scrolled
+  snap: true,
+  fontSize: 18,
+  theme: EpubTheme.dark(),       // light(), dark() or custom(...)
+),
+```
+
+Change them while reading with `setFlow`, `setFontSize`, `setSpread`,
+`setManager` and `updateTheme`.
+
+Custom themes take colors and CSS:
+
+```dart
 EpubTheme.custom(
+  backgroundDecoration: const BoxDecoration(color: Color(0xFFFBF0D9)),
+  foregroundColor: const Color(0xFF3B2F2F),
   customCss: {
-    'p': {
-      'font-family': 'Roboto, sans-serif',
-      'font-size': '18px',
-      'line-height': '1.5',
-      'color': '#333333',
-    },
-    'h1': {
-       'color': 'blue'
-    },
-    "a": {
-      "color": "inherit !important",
-      "-webkit-text-fill-color": "red !important"
-    },
-    "a:link": {
-      "color": "inherit !important",
-      "-webkit-text-fill-color": "red !important"
-    },
-  },
-);
-
-// Selection highlight color (the selection handles are drawn by the OS:
-// on Android they follow your app theme's colorControlActivated / colorAccent,
-// on iOS the system tint, and cannot be styled with CSS)
-EpubTheme.custom(
-  customCss: {
+    'p': {'font-family': 'Georgia, serif', 'line-height': '1.6'},
     '::selection': {'background': 'rgba(255, 200, 0, 0.4)'},
   },
 );
-
-// Selection
-epubController.clearSelection(); // Clear active selection
-epubController.extractText(startCfi: start, endCfi: end); // Extract text from range
-epubController.extractCurrentPageText(); // Extract text from current page
-
-// Settings
-epubController.setSpread(spread: EpubSpread.auto); // Set spread mode
-epubController.setFlow(flow: EpubFlow.paginated); // Set flow mode
-epubController.setManager(manager: EpubManager.defaultManager); // Set manager
-epubController.setFontSize(fontSize: 16); // Adjust font size
 ```
 
-## ⚠️ Limitations & Known Issues
+Selection handles are drawn by the OS and can't be styled with CSS: on Android
+they follow your theme's `colorControlActivated` / `colorAccent`, on iOS the
+system tint.
 
-*   **OPF Support**: The OPF format is not fully supported yet.
-*   **Android Animation**: `onRelocated` callback may be broken when `useSnapAnimationAndroid` is set to `true` in `EpubDisplaySettings` on Android.
-*   **Scrolled Flow**: Chapter navigation might land past the requested location when using `scrolled` flow ([#27](https://github.com/fayis672/epub_viewer/issues/27)).
-*   **Total Page Count**: There is no whole-book page count, since that would require laying out every chapter. Use `progress`, or `chapterPage` / `chapterTotalPages` for the current chapter.
+`allowScriptedContent` runs scripts embedded in the book. Keep it `false` (the
+default) for books you don't trust.
 
-## 🔮 Upcoming Features
+### Web
 
-*   Advanced annotation customization.
-*   Additional callbacks (e.g., rendered, error events).
+- Use `EpubSource.fromAsset` or `fromData`. `fromUrl` needs a server that sends
+  CORS headers, and `fromFile` is unavailable.
+- The book is drawn in an `<iframe>` above the Flutter scene, so Flutter widgets
+  placed over it (a `Drawer`, dialog or pushed route) may not receive taps. Put
+  controls beside the viewer, e.g. in the `AppBar` or a side panel, as the
+  example app does.
+- `selectionContextMenu` is ignored; use `onSelection` for a custom menu.
 
-## 🤝 Contributing
+## Troubleshooting
 
-Contributions are welcome! We appreciate your help in making this package better.
+**macOS shows a blank page.** The `network.server` entitlement is missing; see
+[Install](#install).
 
-1.  **Fork** the repository on GitHub.
-2.  **Clone** your fork locally.
-3.  **Create a new branch** for your feature or bug fix.
-4.  **Commit** your changes with descriptive commit messages.
-5.  **Push** your branch to your fork.
-6.  **Submit a Pull Request** to the main repository.
+**`fromUrl` works in debug but not in release on Android.** Add the `INTERNET`
+permission; see [Install](#install).
 
-Please ensure your code follows the existing style and includes relevant tests.
+**`fromUrl` fails on the web.** The server must allow your origin with CORS
+headers. Download the bytes yourself and use `fromData` if you can't change it.
 
-## 📄 License
+**`progress` is 0 right after opening.** Locations are still being generated.
+Wait for `onLocationLoaded`, or cache them with `initialLocations`.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**Requests like `search` throw `TimeoutException`.** The viewer didn't answer in
+time, e.g. a very long search. Raise `controller.requestTimeout`.
 
-## ❤️ Acknowledgments
+## API overview
 
-*   [Epub.js](https://github.com/futurepress/epub.js) for the core EPUB rendering engine.
-*   [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview) for the powerful WebView integration.
+Full documentation is on [pub.dev](https://pub.dev/documentation/flutter_epub_viewer/latest/).
 
-## 👥 Contributors
+**`EpubViewer`**
 
-Big thanks to all the contributors who have helped build this project!
+| Parameter | Description |
+| :--- | :--- |
+| `epubController`, `epubSource` | **Required.** The controller and the book. |
+| `initialCfi`, `initialXPath` | Position to open at. |
+| `initialLocations` | Cached locations from `onLocationsGenerated`. |
+| `displaySettings` | Flow, snap, spread, font size, theme, direction, scripts. |
+| `selectionContextMenu` | Extra items for the system selection menu. |
+| `suppressNativeContextMenu` | Hide the system selection menu. Default `false`. |
+| `clearSelectionOnPageChange` | Default `true`. |
+| `selectAnnotationRange` | Tapping an annotation also selects its text. Default `false`. |
+| `useLocalServer` | See [Performance](#performance). Default `true`. |
+
+| Callback | Called when |
+| :--- | :--- |
+| `onEpubLoaded` | The first page is displayed. |
+| `onLoadError` | The book can't be opened. |
+| `onChaptersLoaded` | The table of contents is ready. |
+| `onRelocated` | The page changes. |
+| `onLocationLoaded` | Locations are ready; `progress` is accurate from now on. |
+| `onLocationsGenerated` | Locations were generated; cache them. |
+| `onInitialPositionLoading` / `onInitialPositionLoaded` | Opening at the initial position starts / ends. |
+| `onTextSelected` | Text is selected. |
+| `onSelection`, `onSelectionChanging`, `onDeselection` | Selection is final / being dragged / cleared. |
+| `onAnnotationClicked` | A highlight or underline is tapped. |
+| `onFootnoteTapped` | A footnote link is tapped. |
+| `onTouchDown`, `onTouchUp` | Touch events, coordinates normalized to 0–1. |
+
+**`EpubController`**
+
+| Area | Methods |
+| :--- | :--- |
+| Navigation | `next`, `prev`, `display`, `toProgressPercentage`, `moveToFistPage`, `moveToLastPage` |
+| Information | `getCurrentLocation`, `getChapters`, `getMetadata`, `search` |
+| Annotations | `addHighlight`, `removeHighlight`, `addUnderline`, `removeUnderline` |
+| Text | `clearSelection`, `extractText`, `extractCurrentPageText`, `getRectFromCfi` |
+| Display | `setFlow`, `setFontSize`, `setSpread`, `setManager`, `updateTheme` |
+
+## Performance
+
+On Android, iOS and macOS the viewer serves the book to the WebView by URL
+(`useLocalServer: true`, the default). epub.js then opens it like an unpacked
+folder and reads only the chapters it displays and the images, fonts and
+styles they use.
+
+- **Android** answers the WebView's requests itself, so no port is opened and no
+  cleartext configuration is needed.
+- **iOS / macOS** use a server on `127.0.0.1` with a random port. Each book is
+  reachable only under a random 128-bit token while it is open.
+- `fromUrl` books are downloaded to a temporary file first, which is deleted
+  when the book is closed.
+- ZIP64 and encrypted archives fall back to in-memory loading automatically.
+
+With `useLocalServer: false`, and always on the web, the whole book is passed to
+the WebView, and every image, font and stylesheet is unpacked before the first
+page appears.
+
+Measured with `example/integration_test/epub_performance_test.dart`: median of 3
+runs, in milliseconds from mounting the viewer. These are debug builds on the
+Android emulator (Pixel 8, API 36) and the iOS simulator (iPhone 17), so compare
+within a row; release builds on devices are faster across the board. *Search*
+looks for a word with thousands of hits.
+
+| Book | Measure | 2.1.0 | 2.2.0, `useLocalServer: false` | 2.2.0, default |
+| :--- | :--- | ---: | ---: | ---: |
+| Illustrated, 40 chapters + 40 images (26.5 MB) | First page, Android | 7 130 | 6 372 | **1 583** |
+| | First page, iOS | 932 | 827 | **336** |
+| | Locations ready, Android | 13 753 | 7 791 | **3 589** |
+| | Locations ready, iOS | 5 030 | 1 500 | **1 018** |
+| | Search, Android | 20 738 | 1 578 | 2 294 |
+| | Search, iOS | 900 | 133 | **102** |
+| Text only, 300 chapters (1.2 MB) | Locations ready, Android | did not finish¹ | 11 442 | **10 117** |
+| | Locations ready, iOS | 31 089 | 5 551 | 5 552 |
+| | Search, iOS | 8 533 | 844 | **783** |
+| Peak memory, app + WebView, Android | All three books | 1 140 MB | 822 MB | **577 MB** |
+
+¹ The test lost its connection to the app during this book, in both 2.1.0 runs.
+
+Page turns take the same time in all three.
+
+## Known issues
+
+- **No whole-book page count.** It would require laying out every chapter. Use
+  `progress`, or `chapterPage` / `chapterTotalPages`.
+- **Printed page numbers.** `EpubLocation.printedPage` is null for most books, even
+  those with a page list ([#101](https://github.com/fayis672/epub_viewer/issues/101)).
+- **Scrolled flow.** Chapter navigation can land past the requested position
+  ([#27](https://github.com/fayis672/epub_viewer/issues/27)).
+- **Android snap animation.** `onRelocated` may not fire when
+  `useSnapAnimationAndroid` is `true`.
+- **OPF sources.** Opening an unpacked book by its `.opf` file is not fully tested.
+
+## Upgrading from 1.x
+
+- Use `EpubContextMenu` / `EpubContextMenuItem` instead of `flutter_inappwebview`'s
+  `ContextMenu`, which is no longer re-exported.
+- Request methods (`getCurrentLocation`, `search`, `extractText`, …) return their
+  values directly and throw `TimeoutException` instead of hanging.
+
+All changes are in the [CHANGELOG](CHANGELOG.md).
+
+## Contributing
+
+Issues and pull requests are welcome. Please follow the existing style and add
+tests with your change.
+
+```shell
+flutter test                                    # unit tests
+
+cd example
+flutter test integration_test/epub_loading_test.dart -d <device>       # end-to-end
+flutter test integration_test/epub_performance_test.dart -d <device>   # benchmark
+tool/measure_memory.sh [android-serial]                                # Android peak memory
+```
+
+The end-to-end tests drive real WebViews in both loading modes. They cover every
+source type, load errors, book swapping, cached locations and lazy reading. On
+macOS keep the test window visible and the lid open; hidden WebViews are
+throttled and the tests time out.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+Built on [epub.js](https://github.com/futurepress/epub.js) and
+[flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview). Thanks to
+everyone who has contributed:
 
 <a href="https://github.com/fayis672/epub_viewer/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=fayis672/epub_viewer" />

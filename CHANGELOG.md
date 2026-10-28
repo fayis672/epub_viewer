@@ -1,3 +1,62 @@
+## 2.2.0
+
+### ⚡ Performance
+- Books are now served to the viewer by URL instead of being passed through
+  the JavaScript bridge (`EpubViewer.useLocalServer`, on by default on
+  Android, iOS and macOS). epub.js opens the book like an unpacked folder and
+  reads only the chapters it shows and the images they use. Previously the
+  whole file was base64-encoded across the bridge, held in JSZip, and every
+  image, font and stylesheet was unpacked into a blob URL before the first
+  page appeared. On a 26.5 MB illustrated book the first page now appears
+  4–5× sooner (Android emulator 7.1 s → 1.6 s, iOS simulator 0.93 s →
+  0.34 s) and peak memory on Android drops from 1140 MB to 577 MB. See
+  "How books are loaded" in the README for all measurements.
+  - Android serves books through request interception, so no cleartext
+    configuration is needed; iOS and macOS use a loopback server on
+    `127.0.0.1`. Books are only reachable under a random per-book token.
+  - `EpubSource.fromUrl` now downloads straight to a temporary file instead of
+    memory (deleted when the viewer closes or changes book).
+  - Archives that cannot be served this way (ZIP64, encrypted) fall back to
+    the previous in-memory path automatically.
+- Search loads each chapter once (and four at a time) instead of once per
+  hit, so common words no longer trigger thousands of chapter loads.
+- Location generation waits 10 ms between chapters instead of epub.js's
+  default 100 ms, which dominated the time on long books, and fetches the
+  next chapters while the current one is parsed. A 300-chapter book is ready
+  in about 5.6 s instead of 31 s on the iOS simulator.
+- Search and location speedups also apply on web, which keeps loading the
+  whole book in memory (`useLocalServer` is ignored there).
+
+### 🐛 Fixes
+- iOS: `next()` / `prev()` turned the page but `onRelocated` did not fire, so
+  the app kept reporting the previous location (WebKit does not always fire
+  the scroll event epub.js relies on). Possibly related to #64.
+- Swapping `epubSource`: the previous book is now fully released even when
+  epub.js throws while destroying its views, and its pages no longer remain
+  in the view.
+- Load errors from failed requests now carry a readable message
+  (`HTTP 404`, `request error`) instead of `[object ProgressEvent]`.
+
+### 🧹 Cleanup
+- Removed verbose debug logging from the viewer (step-by-step load traces,
+  touch and navigation logs, forwarding of every WebView console message).
+  Errors from the reader page are still printed in debug builds.
+- Example app: removed debug prints; shows load errors in a snackbar.
+
+### 📖 Docs
+- README rewritten around tasks: short platform setup (Android `INTERNET`
+  permission for release builds, macOS entitlements), guides for loading,
+  navigation, progress, search, selection, footnotes and themes,
+  troubleshooting, an API overview, and performance measurements.
+- Android no longer needs `usesCleartextTraffic` for the viewer.
+
+### 🧪 Tests
+- End-to-end tests on real WebViews (`example/integration_test`) for every
+  source type, load errors, source swapping, location caching and lazy
+  loading, run in both loading modes; plus a before/after benchmark
+  (`epub_performance_test.dart`) and an Android memory script
+  (`example/tool/measure_memory.sh`).
+
 ## 2.1.0
 
 ### ✨ New

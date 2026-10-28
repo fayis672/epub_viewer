@@ -1,6 +1,6 @@
 name: flutter_epub_viewer
 description: "A Flutter package for viewing Epub documents developed by combining the power of Epubjs and flutter_inappwebview"
-version: 2.1.0
+version: 2.2.0
 homepage: https://github.com/fayis672/epub_viewer
 
 environment:
@@ -21,6 +21,7 @@ platforms:
   web:
 
 dev_dependencies:
+  archive: ^4.0.7
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0

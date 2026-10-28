@@ -279,11 +279,7 @@ class _MyHomePageState extends State<MyHomePage> {
               isLoading = false;
             });
           },
-          onEpubLoaded: () async {
-            debugPrint('Epub loaded');
-          },
           onRelocated: (value) {
-            debugPrint("Relocated to ${value.startCfi} (${value.progress})");
             setState(() {
               progress = value.progress;
               pageInfo = [
@@ -293,33 +289,15 @@ class _MyHomePageState extends State<MyHomePage> {
               ].join(' · ');
             });
           },
-          onAnnotationClicked: (cfi, data) {
-            debugPrint("Annotation clicked $cfi");
-          },
           onTextSelected: (epubTextSelection) {
             textSelectionCfi = epubTextSelection.selectionCfi;
-            debugPrint(textSelectionCfi);
           },
-          onLocationLoaded: () {
-            debugPrint('on location loaded');
-          },
-          onSelection: (selectedText, cfiRange, selectionRect, viewRect) {
-            debugPrint("On selection changes");
-          },
-          onDeselection: () {
-            debugPrint("on delection");
-          },
-          onSelectionChanging: () {
-            debugPrint("on slection chnages");
-          },
-          onTouchDown: (x, y) {
-            debugPrint("Touch down at $x , $y");
-          },
-          onFootnoteTapped: (footnote) {
-            _showFootnote(footnote);
-          },
-          onTouchUp: (x, y) {
-            debugPrint("Touch up at $x , $y");
+          onFootnoteTapped: _showFootnote,
+          onLoadError: (error) {
+            setState(() => isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not open the book: ${error.message}')),
+            );
           },
           selectAnnotationRange: true,
         ),

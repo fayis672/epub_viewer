@@ -6,7 +6,7 @@ export 'src/models/epub_chapter.dart';
 export 'src/models/epub_display_settings.dart';
 export 'src/models/epub_location.dart';
 export 'src/models/epub_search_result.dart';
-export 'src/models/epub_source.dart';
+export 'src/models/epub_source.dart' hide epubSourceLoader;
 export 'src/models/epub_text_extract_res.dart';
 export 'src/models/epub_text_selection.dart';
 export 'src/models/epub_theme.dart';

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../flutter_epub_viewer.dart';
 import 'platform/epub_web_view.dart';
+import 'server/book_host.dart';
 import 'utils.dart';
 
 /// Callback for text selection events with WebView-relative coordinates.
@@ -54,6 +55,7 @@ class EpubViewer extends StatefulWidget {
     this.suppressNativeContextMenu = false,
     this.clearSelectionOnPageChange = true,
     this.selectAnnotationRange = false,
+    this.useLocalServer = true,
   });
 
   //Epub controller to manage epub
@@ -172,6 +174,20 @@ class EpubViewer extends StatefulWidget {
   /// without programmatically selecting the text.
   final bool selectAnnotationRange;
 
+  /// Whether to serve the book to the WebView from a local server (Android,
+  /// iOS, macOS). Defaults to true.
+  ///
+  /// The book is then opened like an unpacked folder: only the chapters on
+  /// screen and the images they use are read and decoded, instead of passing
+  /// the whole file through the JavaScript bridge and unpacking every image
+  /// and font before the first page. This opens books faster and uses far
+  /// less memory, especially for large or illustrated books.
+  ///
+  /// The server listens on `127.0.0.1` only, under a random per-book token.
+  /// Books it cannot serve (ZIP64, encrypted archives) fall back to the
+  /// in-memory path automatically. Ignored on the web.
+  final bool useLocalServer;
+
   /// Callback fired when the user touches down on the EPUB viewer.
   ///
   /// Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
@@ -252,6 +268,9 @@ class _EpubViewerState extends State<EpubViewer> {
 
   /// Incremented per [loadBook] call so a slow, superseded load is dropped.
   int _loadGeneration = 0;
+
+  /// The book currently served to the WebView by URL, if any.
+  HostedBook? _hostedBook;
 
   @override
   void didUpdateWidget(covariant EpubViewer oldWidget) {
@@ -343,20 +362,11 @@ class _EpubViewerState extends State<EpubViewer> {
     if (controller == null) return;
 
     controller.addHandler("displayed", (data) {
-      if (kDebugMode) {
-        debugPrint("[EpubViewer] 6. 'displayed' JS handler received");
-      }
       widget.onEpubLoaded?.call();
     });
 
     controller.addHandler("chapters", (data) async {
-      if (kDebugMode) {
-        debugPrint("[EpubViewer] 7. 'chapters' JS handler received, parsing chapters...");
-      }
       final chapters = await widget.epubController.parseChapters();
-      if (kDebugMode) {
-        debugPrint("[EpubViewer] 8. Chapters parsed (${chapters.length} chapters found)");
-      }
       widget.onChaptersLoaded?.call(chapters);
     });
 
@@ -482,9 +492,6 @@ class _EpubViewerState extends State<EpubViewer> {
     });
 
     controller.addHandler("readyToLoad", (data) {
-      if (kDebugMode) {
-        debugPrint("[EpubViewer] 4. 'readyToLoad' JS handler received in Dart");
-      }
       _readyToLoad = true;
       loadBook();
     });
@@ -519,10 +526,6 @@ class _EpubViewerState extends State<EpubViewer> {
     controller.addHandler("footnoteTapped", (data) {
       try {
         final footnote = EpubFootnote.fromJson(Utils.asStringMap(data[0]));
-        if (kDebugMode) {
-          debugPrint("[EPUB-TEST][footnote] Dart received href=${footnote.href} "
-              "text=${footnote.text.length} chars");
-        }
         widget.onFootnoteTapped?.call(footnote);
       } catch (e) {
         if (kDebugMode) {
@@ -537,21 +540,35 @@ class _EpubViewerState extends State<EpubViewer> {
   }
 
   Future<void> loadBook() async {
-    if (kDebugMode) {
-      debugPrint("[EpubViewer] 5. loadBook() called");
-    }
     final controller = webViewController;
-    if (controller == null) {
-      if (kDebugMode) {
-        debugPrint("[EpubViewer] ERROR: loadBook() webViewController is null!");
-      }
-      return;
-    }
+    if (controller == null) return;
 
     final generation = ++_loadGeneration;
-    final Uint8List data;
+    // The previous book is replaced (the JS side destroys it in loadBook);
+    // stop serving it.
+    unawaited(_hostedBook?.close());
+    _hostedBook = null;
+
+    String? bookUrl;
+    Uint8List? data;
     try {
-      data = await widget.epubSource.epubData;
+      if (widget.useLocalServer && isBookHostingSupported) {
+        try {
+          final hosted = await hostEpub(widget.epubSource);
+          if (generation != _loadGeneration || !mounted) {
+            unawaited(hosted.close());
+            return;
+          }
+          _hostedBook = hosted;
+          bookUrl = hosted.url;
+        } on BookHostingUnsupported catch (e) {
+          if (kDebugMode) {
+            debugPrint('[EpubViewer] Serving by URL not possible ($e); '
+                'loading the bytes instead');
+          }
+        }
+      }
+      if (bookUrl == null) data = await widget.epubSource.epubData;
     } catch (e) {
       if (generation == _loadGeneration && mounted) {
         _reportLoadError(
@@ -601,6 +618,9 @@ class _EpubViewerState extends State<EpubViewer> {
     controller.callMethod('loadBook', [
       data,
       <String, dynamic>{
+        // When set, epub.js opens the book from the local server and `data`
+        // is null.
+        'url': bookUrl,
         'cfi': cfi,
         'initialXPath': initialXPath,
         'manager': manager,
@@ -620,8 +640,6 @@ class _EpubViewerState extends State<EpubViewer> {
         'interceptFootnotes': widget.onFootnoteTapped != null,
         'cachedLocations': widget.initialLocations,
         'reportLocations': widget.onLocationsGenerated != null,
-        // "[EPUB-TEST]" diagnostics in the JS console, debug builds only.
-        'debugLogs': kDebugMode,
       },
     ]);
   }
@@ -677,6 +695,8 @@ class _EpubViewerState extends State<EpubViewer> {
   @override
   void dispose() {
     _loadGeneration++;
+    unawaited(_hostedBook?.close());
+    _hostedBook = null;
     _stopSelectionMonitoring();
     webViewController?.dispose();
     super.dispose();
